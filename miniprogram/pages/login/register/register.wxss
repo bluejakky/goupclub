@@ -1,0 +1,59 @@
+.page { padding: 16rpx 24rpx 64rpx; font-family: 'SourceHanSansSC-Regular', 'PingFang SC', MicrosoftYaHei, '-apple-system', BlinkMacSystemFont, 'Hiragino Sans GB', 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; }
+.card { background: #fff; border-radius: 16rpx; box-shadow: 0 8rpx 20rpx rgba(0,0,0,0.06); padding: 24rpx; }
+.form {}
+.group-title { display: block; margin: 16rpx 0 12rpx; color: #0f172a; font-weight: 600; }
+.field { display: flex; align-items: center; gap: 12rpx; margin-bottom: 16rpx; position: relative; border-bottom: 1rpx solid #e5e7eb; padding-bottom: 8rpx; }
+.label { width: 200rpx; color: #000; font-weight: 400; font-size: 26rpx; }
+.radio-group { display: flex; gap: 24rpx; justify-content: flex-end; align-items: center; flex: 1; padding-right: 56rpx; padding-top: 12rpx; padding-bottom: 12rpx; }
+.radio { display: flex; align-items: center; gap: 8rpx; color: #0f172a; font-size: 22rpx; }
+.icon { width: 36rpx; height: 36rpx; opacity: 0.9; }
+.input { flex: 1; border: none; border-radius: 0; padding: 12rpx; padding-right: 56rpx; background: transparent; }
+.input.align-left { text-align: left; }
+.input.align-right { text-align: right; }
+.input::placeholder { color: #9ca3af; font-size: 22rpx; text-align: right; }
+.mini { display:none; }
+.toggle { width: 36rpx; height: 36rpx; opacity: 0.6; position: absolute; right: 8rpx; top: 50%; transform: translateY(-50%); }
+.toggle.on { opacity: 1; }
+.footer { position: fixed; left: 0; right: 0; bottom: 0; padding: 16rpx 24rpx; background: #fff; box-shadow: 0 -6rpx 20rpx rgba(0,0,0,0.06); }
+.primary { background: #7c3aed; color: #fff; border-radius: 12rpx; }
+ .bottom-space { height: 196rpx; }
+
+/* 顶部个人信息与头像 */
+.profile-header {
+  padding: 32rpx 24rpx 8rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.profile-title {
+  font-size: 36rpx;
+  font-weight: 600;
+  color: #111;
+  margin-bottom: 16rpx;
+}
+.avatar {
+  display: flex;
+  flex-direction: column;
+
+}
+.avatar-img {
+  width: 160rpx;
+  height: 160rpx;
+  border-radius: 50%;
+  background: #f3f4f6;
+  border: 2rpx solid #e5e7eb;
+}
+.avatar-tip {
+  font-size: 24rpx;
+  color: #888;
+  margin-top: 12rpx;
+}
+.avatar:active .avatar-img { opacity: 0.88; }
+
+/* 邀码与协议 */
+.extra { padding: 12rpx 24rpx; }
+.agreements { margin-top: 56rpx; background: #fff; border-radius: 12rpx; padding: 12rpx; box-shadow: 0 6rpx 12rpx rgba(0,0,0,0.04); }
+.agreement-item { display: flex; align-items: center; gap: 8rpx; color: #333; font-size: 22rpx; }
+.agreement-item .wx-checkbox-input { width: 28rpx; height: 28rpx; border-radius: 50%; }
+.agreement-item .wx-checkbox-input-checked { border-radius: 50%; }
+.radio .wx-radio-input { width: 28rpx; height: 28rpx; }

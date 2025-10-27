@@ -1,0 +1,35 @@
+<view class="page">
+  <view class="filters">
+    <radio-group class="radio-group" bindchange="onFilterChange">
+      <label class="radio-item">
+        <radio value="all" checked="{{filter==='all'}}"/> 全部
+      </label>
+      <label class="radio-item">
+        <radio value="registered" checked="{{filter==='registered'}}"/> 已报名
+      </label>
+      <label class="radio-item">
+        <radio value="waitlist" checked="{{filter==='waitlist'}}"/> 候补
+      </label>
+    </radio-group>
+  </view>
+
+  <view class="list">
+    <block wx:for="{{displayed}}" wx:key="id">
+      <view class="card">
+        <image class="cover" src="{{item.cover}}" mode="aspectFill"/>
+        <view class="content">
+          <navigator url="/pages/detail/detail?id={{item.id}}" class="title">{{item.title}}</navigator>
+          <view class="meta">
+            <text class="status {{item.status==='已报名'?'ok':'wait'}}">{{item.status}}</text>
+            <text class="time">{{item.timeRange}}</text>
+            <text class="place">{{item.place}}</text>
+          </view>
+          <view class="actions">
+            <button class="danger" wx:if="{{!item.started}}" data-id="{{item.id}}" bindtap="onCancel">取消报名</button>
+            <text wx:else class="tip">活动已开始，无法取消</text>
+          </view>
+        </view>
+      </view>
+    </block>
+  </view>
+</view>

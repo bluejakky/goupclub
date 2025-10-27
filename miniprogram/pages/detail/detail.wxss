@@ -1,0 +1,24 @@
+.container { padding-bottom: 120rpx; position: relative; }
+.hero { width: 100%; height: 360rpx; background: #e2e8f0; }
+.hero image { width: 100%; height: 100%; }
+.section { padding: 24rpx; }
+.title { font-size: 36rpx; font-weight: 600; color: #111827; }
+.tags { display: flex; gap: 12rpx; margin: 10rpx 0; }
+.tag { padding: 6rpx 12rpx; border-radius: 9999rpx; font-size: 24rpx; }
+.tag.hot { background: #fee2e2; color: #b91c1c; }
+.tag.top { background: #e0f2fe; color: #075985; }
+.meta { display: flex; align-items: center; gap: 8rpx; color: #6b7280; font-size: 26rpx; margin: 6rpx 0; }
+.content { color: #374151; line-height: 1.6; margin: 6rpx 0; }
+.bottom-bar { position: fixed; left: 0; right: 0; bottom: 0; display: flex; gap: 16rpx; padding: 16rpx; background: #fff; box-shadow: 0 -8rpx 16rpx rgba(0,0,0,0.06); }
+.share { flex: 1; background: #f1f5f9; color: #0f172a; border-radius: 12rpx; }
+.apply { flex: 1; background: #7c3aed; color: #fff; border-radius: 12rpx; }
+.share-icon-only { width: 120rpx; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.meta-icon { width: 28rpx; height: 28rpx; }
+.share-content { display: flex; flex-direction: column; align-items: center; gap: 6rpx; }
+.share-icon { width: 32rpx; height: 32rpx; }
+.share-text { color: #60a5fa; font-size: 26rpx; }
+.signup-row { display: flex; align-items: center; justify-content: space-between; padding: 8rpx 12rpx; }
+.flags { display: flex; align-items: center; gap: 6rpx; }
+.flag { width: 36rpx; height: 36rpx; line-height: 36rpx; text-align: center; border-radius: 50%; background: #f3f4f6; font-size: 22rpx; }
+.signup-count { color: #6b7280; }
+/* 已移除设计叠层相关样式 */

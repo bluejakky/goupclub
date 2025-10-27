@@ -1,0 +1,43 @@
+<view class="page">
+  <view class="summary">
+    <text>积分支付支持在订单页选择固定抵扣档位（共 6 档）</text>
+  </view>
+  <view class="tabs">
+    <view class="tab {{tab==='available'?'active':''}}" data-tab="available" bindtap="onTab">可用支付项</view>
+    <view class="tab {{tab==='expired'?'active':''}}" data-tab="expired" bindtap="onTab">已过期支付项</view>
+  </view>
+
+  <view wx:if="{{tab==='available'}}" class="list">
+    <block wx:if="{{available.length}}">
+      <block wx:for="{{available}}" wx:key="id">
+        <view class="voucher available">
+          <view class="left">
+            <text class="money">所需积分：{{item.amount}}</text>
+          </view>
+          <view class="right">
+            <view class="title">{{item.title}}</view>
+            <view class="desc">有效期至 {{item.expire}}</view>
+          </view>
+        </view>
+      </block>
+    </block>
+    <view wx:else class="empty">暂无可用支付项</view>
+  </view>
+
+  <view wx:elif="{{tab==='expired'}}" class="list">
+    <block wx:if="{{expired.length}}">
+      <block wx:for="{{expired}}" wx:key="id">
+        <view class="voucher expired">
+          <view class="left">
+            <text class="money">所需积分：{{item.amount}}</text>
+          </view>
+          <view class="right">
+            <view class="title">{{item.title}}</view>
+            <view class="desc">已于 {{item.expire}} 过期</view>
+          </view>
+        </view>
+      </block>
+    </block>
+
+  </view>
+</view>

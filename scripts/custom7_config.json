@@ -1,0 +1,12 @@
+{
+  "note": "可在此文件中调整七个切片的坐标，单位px，基于 UIDESIGN/登录页.png 整图坐标系。",
+  "slices": [
+    {"name": "c7_above_buttons.png",   "bbox": [0, 1160, 786, 380]},
+    {"name": "c7_login_label.png",     "bbox": [260, 1548, 160, 56]},
+    {"name": "c7_register_label.png",  "bbox": [436, 1548, 160, 56]},
+    {"name": "c7_username.png",        "bbox": [160, 1050, 560, 76]},
+    {"name": "c7_password.png",        "bbox": [160, 1140, 560, 76]},
+    {"name": "c7_login_button.png",    "bbox": [220, 1538, 380, 80]},
+    {"name": "c7_phone_quick.png",     "bbox": [80, 920, 260, 60]}
+  ]
+}

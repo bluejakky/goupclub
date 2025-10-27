@@ -1,0 +1,45 @@
+<view class="container">
+  <swiper class="hero" indicator-dots="true" autoplay="true" interval="3000">
+    <block wx:for="{{detail.images}}" wx:key="*this">
+      <swiper-item>
+        <image mode="aspectFill" src="{{item}}"/>
+      </swiper-item>
+    </block>
+  </swiper>
+
+  <view class="section">
+    <view class="title">{{detail.title}}</view>
+    <view class="tags">
+      <view wx:if="{{detail.hot}}" class="tag hot">热点</view>
+      <view wx:if="{{detail.top}}" class="tag top">置顶</view>
+    </view>
+    <view class="meta">
+      <image class="meta-icon" src="/assets/time.png" mode="aspectFit"/>
+      <text>时间：{{detail.start}} - {{detail.end}}</text>
+    </view>
+    <view class="meta">
+      <image class="meta-icon" src="/assets/address.png" mode="aspectFit"/>
+      <text>地点：{{detail.place}}</text>
+    </view>
+    <view class="signup-row">
+      <view class="flags">
+        <block wx:for="{{detail.flags}}" wx:key="index">
+          <text class="flag">{{item}}</text>
+        </block>
+      </view>
+      <view class="signup-count">已报名 {{detail.signed}}/{{detail.max}}</view>
+    </view>
+  </view>
+
+  <view class="section">
+    <view class="content" wx:for="{{detail.content}}" wx:key="index">• {{item}}</view>
+  </view>
+
+  <view class="bottom-bar">
+      <view class="share-icon-only">
+         <image class="share-icon" src="/assets/share.png" mode="aspectFit"/>
+         <text class="share-text">分享</text>
+       </view>
+       <button class="apply" bindtap="onApply">{{ctaText}}</button>
+    </view>
+</view>

@@ -1,0 +1,38 @@
+<view class="page">
+  <view class="notice">退款仅退现金，积分不退回</view>
+  <view class="list">
+    <block wx:for="{{records}}" wx:key="id">
+      <view class="card">
+        <view class="title">{{item.title}}</view>
+        <view class="row">
+          <text class="label">申请时间</text>
+          <text class="value">{{item.applyTime}}</text>
+        </view>
+        <view class="row">
+          <text class="label">原状态</text>
+          <text class="value">{{item.originalStatus}}</text>
+        </view>
+        <view class="row">
+          <text class="label">退款金额</text>
+          <text class="value">¥{{item.amount}}</text>
+        </view>
+        <view class="row">
+          <text class="label">退款方式</text>
+          <text class="value">{{item.method}}</text>
+        </view>
+        <view class="row">
+          <text class="label">积分处理</text>
+          <text class="value">不退回积分</text>
+        </view>
+        <view class="row">
+          <text class="label">状态</text>
+          <text class="value {{item.status==='失败'?'fail':(item.status==='成功'?'ok':'pending')}}">{{item.status}}</text>
+        </view>
+        <view class="actions">
+          <button wx:if="{{item.status==='失败'}}" class="outline" data-id="{{item.id}}" bindtap="onContact">联系客服</button>
+          <button class="link" data-id="{{item.id}}" bindtap="onView">查看详情</button>
+        </view>
+      </view>
+    </block>
+  </view>
+</view>

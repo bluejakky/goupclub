@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>支付异常监控 - GoUp 管理后台</title>
+    <link rel="stylesheet" href="./assets/style.css" />
+    <link rel="icon" href="data:," />
+  </head>
+  <body>
+    <div id="errors-app" class="content">
+      <header class="topbar" style="justify-content:space-between;">
+        <div class="brand">支付异常监控</div>
+        <a href="./index.html" class="ghost">返回首页</a>
+      </header>
+
+      <section class="card" style="margin:12px; padding:12px; display:flex; align-items:center; gap:8px;">
+        <div style="font-weight:600;">管理员登录</div>
+        <input v-model="adminLogin.username" placeholder="用户名" style="flex:0 0 160px;" />
+        <input v-model="adminLogin.password" type="password" placeholder="密码" style="flex:0 0 160px;" />
+        <button @click="doAdminLogin">登录</button>
+        <div v-if="adminToken" style="color:var(--muted); font-size:12px;">已登录</div>
+        <button v-if="adminToken" @click="logoutAdmin" style="color:#ef4444;">退出</button>
+      </section>
+
+      <section class="card" style="margin:12px; padding:12px;">
+        <div class="actions" style="display:flex; gap:12px; align-items:center; flex-wrap:wrap;">
+          <label>数量限制 <input type="number" v-model.number="errorsLimit" min="10" max="200" /></label>
+          <button @click="fetchPaymentErrors">手动刷新</button>
+          <label style="display:flex;align-items:center;gap:6px;">
+            <input type="checkbox" v-model="autoRefresh" /> 自动刷新
+          </label>
+          <label>间隔(ms) <input type="number" v-model.number="refreshIntervalMs" min="3000" step="1000" style="width:120px;" /></label>
+          <label>渠道
+            <select v-model="providerFilter">
+              <option v-for="p in providerOptions" :key="p" :value="p">{{ p }}</option>
+            </select>
+          </label>
+          <label>搜索
+            <input v-model="keyword" placeholder="按原因/详情/订单ID" style="width:180px;" />
+          </label>
+          <label>每页数量 <input type="number" v-model.number="pageSize" min="5" max="50" style="width:80px;" /></label>
+          <div style="margin-left:auto; display:flex; align-items:center; gap:6px;">
+            <button class="ghost" @click="setPage(currentPage-1)" :disabled="currentPage<=1">上一页</button>
+            <span>第 {{ currentPage }} / {{ totalPages }} 页</span>
+            <button class="ghost" @click="setPage(currentPage+1)" :disabled="currentPage>=totalPages">下一页</button>
+            <button @click="exportCSV" title="导出当前列表为CSV">导出CSV</button>
+          </div>
+        </div>
+        <div class="card" style="margin-top:12px; padding:12px;">
+          <table class="table">
+            <thead><tr><th>ID</th><th>渠道</th><th>订单ID</th><th>原因</th><th>详情</th><th>时间</th></tr></thead>
+            <tbody>
+              <tr v-for="e in visibleErrors" :key="e.id">
+                <td>{{ e.id }}</td>
+                <td>{{ e.provider }}</td>
+                <td>{{ e.orderId }}</td>
+                <td>{{ e.reason }}</td>
+                <td><pre style="white-space:pre-wrap;">{{ e.detail }}</pre></td>
+                <td>{{ e.createdAt }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+
+    <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+    <!-- 统一 HTTP 封装：附带令牌与 401/403 处理 -->
+    <script src="./js/http.js"></script>
+    <script src="./js/errors.js"></script>
+  </body>
+  </html>

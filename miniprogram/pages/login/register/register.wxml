@@ -1,0 +1,86 @@
+<view class="page">
+  <!-- 头像与个人信息标题 -->
+  <view class="profile-header">
+    <text class="profile-title">个人信息</text>
+    <view class="avatar" bindtap="onChooseAvatar">
+      <image class="avatar-img" src="{{avatarUrl ? avatarUrl : defaultAvatar}}" mode="aspectFill"></image>
+      <text class="avatar-tip">点击上传头像（必填）</text>
+    </view>
+  </view>
+  <view class="form card">
+    <view class="field">
+      <text class="label">用户名*</text>
+      <input class="input" placeholder="请输入用户名（至少3位）" placeholder-style="text-align:right;font-size:22rpx;" bindinput="onInput" data-field="username" value="{{username}}"/>
+    </view>
+    <view class="field">
+      <text class="label">密码*</text>
+      <input class="input {{password ? 'align-left' : 'align-right'}}" password="{{!showPassword}}" placeholder="8-20位，含字母+数字" placeholder-style="text-align:right;font-size:22rpx;" bindinput="onInput" data-field="password" value="{{password}}"/>
+      <image class="toggle {{showPassword?'on':''}}" src="{{eyeIcon}}" mode="aspectFit" bindtap="toggle" data-target="showPassword"/>
+    </view>
+    <view class="field">
+      <text class="label">确认密码*</text>
+      <input class="input {{confirm ? 'align-left' : 'align-right'}}" password="{{!showConfirm}}" placeholder="再次输入密码" placeholder-style="text-align:right;font-size:22rpx;" bindinput="onInput" data-field="confirm" value="{{confirm}}"/>
+      <image class="toggle {{showConfirm?'on':''}}" src="{{eyeIcon}}" mode="aspectFit" bindtap="toggle" data-target="showConfirm"/>
+    </view>
+    <!-- 基本信息字段（不显示“基本信息”标题） -->
+    <view class="field">
+      <text class="label">英文名*</text>
+      <input class="input" placeholder="如：Alice" placeholder-style="text-align:right;font-size:22rpx;" bindinput="onInput" data-field="nameEn" value="{{nameEn}}"/>
+    </view>
+    <view class="field">
+      <text class="label">性别*</text>
+      <radio-group class="radio-group" bindchange="onGenderChange">
+        <label class="radio"><radio value="女" checked="{{gender==='女'}}" color="#7c3aed"/>女</label>
+        <label class="radio"><radio value="男" checked="{{gender==='男'}}" color="#7c3aed"/>男</label>
+      </radio-group>
+    </view>
+    <view class="field">
+      <text class="label">年龄*</text>
+      <input class="input" type="number" placeholder="请输入年龄" placeholder-style="text-align:right;font-size:22rpx;" bindinput="onInput" data-field="age" value="{{age}}"/>
+    </view>
+    <view class="field">
+      <text class="label">国籍*</text>
+      <input class="input" placeholder="如：中国" placeholder-style="text-align:right;font-size:22rpx;" bindinput="onInput" data-field="nation" value="{{nation}}"/>
+    </view>
+
+    <view class="field">
+      <text class="label">语言</text>
+      <input class="input" placeholder="如：中文/English" placeholder-style="text-align:right;font-size:22rpx;" bindinput="onInput" data-field="language" value="{{language}}"/>
+    </view>
+    <view class="field">
+      <text class="label">职业</text>
+      <input class="input" placeholder="选填" placeholder-style="text-align:right;font-size:22rpx;" bindinput="onInput" data-field="occupation" value="{{occupation}}"/>
+    </view>
+    <view class="field">
+      <text class="label">城市</text>
+      <input class="input" placeholder="选填" placeholder-style="text-align:right;font-size:22rpx;" bindinput="onInput" data-field="city" value="{{city}}"/>
+    </view>
+    <view class="field">
+      <text class="label">喜欢的类型</text>
+      <input class="input" placeholder="如：露营/路跑" placeholder-style="text-align:right;font-size:22rpx;" bindinput="onInput" data-field="favorite" value="{{favorite}}"/>
+    </view>
+  </view>
+
+  <!-- 邀码与协议 -->
+  <view class="extra">
+    <view class="field">
+      <text class="label">邀请码</text>
+      <input class="input" placeholder="选填" placeholder-style="text-align:right;font-size:22rpx;" bindinput="onInput" data-field="inviteCode" value="{{inviteCode}}"/>
+    </view>
+    <view class="agreements">
+      <checkbox-group bindchange="onAgreementChange">
+        <label class="agreement-item">
+          <checkbox value="payment" checked="{{agreePaymentRules}}"/> 向上GO-UP小程序支付、退款与积分规则
+        </label>
+        <label class="agreement-item">
+          <checkbox value="user" checked="{{agreeUserAgreement}}"/> 向上GO-UP小程序用户使用协议及平台法律规则
+        </label>
+      </checkbox-group>
+    </view>
+  </view>
+  <view class="bottom-space"></view>
+
+  <view class="footer">
+    <button class="primary" bindtap="onSubmit">提交并注册</button>
+  </view>
+</view>

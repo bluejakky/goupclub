@@ -1,0 +1,17 @@
+.page { padding: 16rpx; }
+.filters { background: #fff; padding: 16rpx; border-radius: 12rpx; box-shadow: 0 6rpx 20rpx rgba(0,0,0,0.05); }
+.radio-group { display: flex; }
+.radio-item { margin-right: 24rpx; color: #333; }
+.list { margin-top: 16rpx; }
+.card { display: flex; background: #fff; border-radius: 12rpx; overflow: hidden; margin-bottom: 16rpx; box-shadow: 0 6rpx 20rpx rgba(0,0,0,0.05); }
+.cover { width: 220rpx; height: 160rpx; }
+.content { flex: 1; padding: 16rpx; }
+.title { font-size: 30rpx; font-weight: 600; color: #111; }
+.meta { margin-top: 8rpx; display: flex; gap: 12rpx; flex-wrap: wrap; }
+.status { padding: 4rpx 10rpx; border-radius: 8rpx; font-size: 24rpx; }
+.status.ok { background: #e8f7ec; color: #07c160; }
+.status.wait { background: #fff7e6; color: #faad14; }
+.time, .place { color: #666; }
+.actions { margin-top: 12rpx; }
+.danger { background: #ff4d4f; color: #fff; }
+.tip { color: #999; }

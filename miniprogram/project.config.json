@@ -1,0 +1,39 @@
+{
+  "miniprogramRoot": "./",
+  "projectname": "GoUpMini",
+  "description": "GoUp 活动会员系统 微信小程序",
+  "appid": "wx9891e38e93068100",
+  "setting": {
+    "urlCheck": false,
+    "es6": true,
+    "postcss": true,
+    "minified": true,
+    "compileWorklet": false,
+    "uglifyFileName": false,
+    "uploadWithSourceMap": true,
+    "enhance": false,
+    "packNpmManually": false,
+    "packNpmRelationList": [],
+    "minifyWXSS": true,
+    "minifyWXML": true,
+    "localPlugins": false,
+    "disableUseStrict": false,
+    "useCompilerPlugins": false,
+    "condition": false,
+    "swc": false,
+    "disableSWC": true,
+    "babelSetting": {
+      "ignore": [],
+      "disablePlugins": [],
+      "outputPath": ""
+    }
+  },
+  "libVersion": "2.31.0",
+  "compileType": "miniprogram",
+  "simulatorPluginLibVersion": {},
+  "packOptions": {
+    "ignore": [],
+    "include": []
+  },
+  "editorSetting": {}
+}

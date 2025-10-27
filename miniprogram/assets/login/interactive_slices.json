@@ -1,0 +1,87 @@
+{
+  "input": "UIDESIGN/登录页.png",
+  "canvas_size": [
+    786,
+    1704
+  ],
+  "count": 7,
+  "slices": [
+    {
+      "name": "top_area.png",
+      "bbox": [
+        0,
+        0,
+        786,
+        1067
+      ]
+    },
+    {
+      "name": "register_label.png",
+      "bbox": [
+        564,
+        1075,
+        150,
+        48
+      ]
+    },
+    {
+      "name": "login_button_bg.png",
+      "bbox": [
+        61,
+        1135,
+        663,
+        105
+      ]
+    },
+    {
+      "name": "phone_quick_label.png",
+      "bbox": [
+        0,
+        955,
+        181,
+        56
+      ]
+    },
+    {
+      "name": "username_bg.png",
+      "bbox": [
+        21,
+        655,
+        743,
+        70
+      ]
+    },
+    {
+      "name": "password_bg.png",
+      "bbox": [
+        21,
+        745,
+        743,
+        70
+      ]
+    },
+    {
+      "name": "privacy_text.png",
+      "bbox": [
+        101,
+        1015,
+        260,
+        40
+      ]
+    }
+  ],
+  "inputs": {
+    "username": [
+      31,
+      663,
+      723,
+      54
+    ],
+    "password": [
+      31,
+      753,
+      723,
+      54
+    ]
+  }
+}

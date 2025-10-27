@@ -1,0 +1,48 @@
+.container { padding: 24rpx; position: relative; }
+.summary { background: #f8fafc; padding: 16rpx; border-radius: 12rpx; margin-bottom: 120rpx; }
+.summary .amount { text-align: center; }
+.price { color: #7c3aed; font-weight: 700; }
+.price.large { font-size: 60rpx; }
+.tip { color: #6b7280; font-size: 24rpx; margin-top: 6rpx; }
+.pay-list { display: flex; flex-direction: column; gap: 16rpx; }
+.pay-item { display: flex; align-items: center; gap: 12rpx; background: #fff; border-radius: 12rpx; padding: 16rpx; box-shadow: 0 6rpx 16rpx rgba(0,0,0,0.06); }
+.method-title { font-weight: 600; margin-bottom: 12rpx; }
+.method-list { display: flex; gap: 12rpx; }
+.method-item { flex: 1; display: flex; align-items: center; gap: 12rpx; border: 1rpx solid #e5e7eb; border-radius: 12rpx; padding: 12rpx; }
+.method-item.active { border-color: #7c3aed; box-shadow: 0 0 0 2rpx rgba(124,58,237,0.2); }
+.method-item .label { font-weight: 500; }
+.method-item .desc { margin-left: auto; color: #6b7280; }
+.actions { display: flex; gap: 12rpx; margin-top: 16rpx; }
+.btn { flex: 1; text-align: center; padding: 20rpx 0; border-radius: 12rpx; }
+.btn.cancel { background: #f3f4f6; color: #374151; flex: 3; }
+.btn.confirm { background: #7c3aed; color: #fff; flex: 7; }
+.pay-item .icon { width: 40rpx; height: 40rpx; display: flex; align-items: center; justify-content: center; }
+.pay-item .name { font-weight: 600; }
+.pay-item .desc { margin-left: auto; color: #6b7280; }
+.pay-item.disabled { opacity: 0.5; }
+.pay-item.wechat { border: 1rpx solid #10b981; }
+.pay-item.alipay { border: 1rpx solid #3b82f6; }
+.pay-item.voucher { border: 1rpx solid #ef4444; }
+.pay-item.active { border-color: #7c3aed; box-shadow: 0 0 0 2rpx rgba(124,58,237,0.2); }
+.method-item .label { font-weight: 500; }
+.method-item .desc { margin-left: auto; color: #6b7280; }
+.actions { display: flex; gap: 12rpx; margin-top: 168rpx; }
+.btn { flex: 1; text-align: center; padding: 20rpx 0; border-radius: 12rpx; }
+.btn.cancel { background: #f3f4f6; color: #374151; }
+.btn.confirm { background: #7c3aed; color: #fff; }
+.pay-item .icon { width: 40rpx; height: 40rpx; display: flex; align-items: center; justify-content: center; }
+.pay-item .name { font-weight: 600; }
+.pay-item .desc { margin-left: auto; color: #6b7280; }
+.pay-item.disabled { opacity: 0.5; }
+.pay-item.wechat { border: 1rpx solid #10b981; }
+.pay-item.alipay { border: 1rpx solid #3b82f6; }
+.pay-item.voucher { border: 1rpx solid #ef4444; }
+.radio-icon { width: 36rpx; height: 36rpx; }
+/* Remove borders from pay options */
+.pay-item, .pay-item.wechat, .pay-item.alipay, .pay-item.voucher { border: none !important; }
+.activity-summary { display: flex; align-items: center; gap: 16rpx; margin-top: 16rpx; }
+.activity-thumb { width: 180rpx; height: 130rpx; border-radius: 12rpx; object-fit: cover; }
+.activity-info { flex: 1; display: flex; flex-direction: column; gap: 8rpx; }
+.activity-title { font-size: 28rpx; font-weight: 600; color: #111827; }
+.activity-time { font-size: 24rpx; color: #6b7280; }
+.activity-place { font-size: 24rpx; color: #6b7280; }

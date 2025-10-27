@@ -1,0 +1,45 @@
+<view class="page">
+  <view class="section">
+    <view class="section-title">基础信息（不可修改）</view>
+    <view class="row">
+      <text class="label">性别</text>
+      <input class="input" value="{{readonly.gender}}" disabled />
+    </view>
+    <view class="row">
+      <text class="label">年龄</text>
+      <input class="input" value="{{readonly.age}}" disabled />
+    </view>
+    <view class="row">
+      <text class="label">国籍</text>
+      <input class="input" value="{{readonly.nationality}}" disabled />
+    </view>
+    <view class="row">
+      <text class="label">证件号</text>
+      <input class="input" value="{{readonly.idMasked}}" disabled />
+    </view>
+  </view>
+
+  <view class="section">
+    <view class="section-title">偏好与资料（可修改）</view>
+    <view class="row">
+      <text class="label">语言</text>
+      <input class="input" placeholder="例如：中文、英文" value="{{form.language}}" bindinput="onInput" data-field="language" />
+    </view>
+    <view class="row">
+      <text class="label">职业</text>
+      <input class="input" placeholder="你的职业" value="{{form.occupation}}" bindinput="onInput" data-field="occupation" />
+    </view>
+    <view class="row">
+      <text class="label">城市</text>
+      <input class="input" placeholder="常驻城市" value="{{form.city}}" bindinput="onInput" data-field="city" />
+    </view>
+    <view class="row">
+      <text class="label">喜好类型</text>
+      <input class="input" placeholder="徒步/露营/路跑..." value="{{form.favorite}}" bindinput="onInput" data-field="favorite" />
+    </view>
+  </view>
+
+  <view class="footer">
+    <button class="primary" bindtap="onSave">保存修改</button>
+  </view>
+</view>

@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>GoUp 管理后台</title>
+    <link rel="stylesheet" href="./assets/style.css" />
+    <link rel="icon" href="data:," />
+    <!-- Quill 富文本编辑器样式 -->
+    <link href="https://cdn.jsdelivr.net/npm/quill@1.3.7/dist/quill.snow.css" rel="stylesheet" />
+    <!-- Cropper 图片裁剪样式 -->
+    <link href="https://cdn.jsdelivr.net/npm/cropperjs@1.5.13/dist/cropper.min.css" rel="stylesheet" />
+    <!-- Leaflet 地图样式 -->
+    <link href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" rel="stylesheet" />
+  </head>
+  <body>
+    <div id="app">
+      <header class="topbar">
+        <div class="brand">GoUp 管理后台</div>
+        <nav class="nav">
+          <button :class="{active: tab==='activity'}" @click="tab='activity'">活动管理</button>
+          <button :class="{active: tab==='member'}" @click="tab='member'">会员管理</button>
+          <button :class="{active: tab==='stats'}" @click="tab='stats'">数据统计</button>
+          <button :class="{active: tab==='voucher'}" @click="tab='voucher'">积分支付规则</button>
+          <a href="./errors.html" class="ghost">支付异常监控</a>
+        </nav>
+        <div class="progress-note" style="display:flex;align-items:center;gap:12px;">
+          <span>小程序详情/支付页骨架已创建</span>
+          <label style="display:flex;align-items:center;gap:6px;font-weight:500;color:#374151;">
+            <input type="checkbox" v-model="useApiVal" /> 使用后端API
+          </label>
+          <div class="theme-picker">
+            <span style="color:var(--muted);margin-right:4px">主题：</span>
+            <button class="theme-swatch dark" :class="{ selected: themeMode==='dark' }" @click="setTheme('dark')" title="夜蓝"></button>
+            <button class="theme-swatch light" :class="{ selected: themeMode==='light' }" @click="setTheme('light')" title="明亮"></button>
+            <button class="theme-swatch ocean" :class="{ selected: themeMode==='ocean' }" @click="setTheme('ocean')" title="海洋"></button>
+            <button class="theme-swatch forest" :class="{ selected: themeMode==='forest' }" @click="setTheme('forest')" title="森林"></button>
+            <button class="theme-swatch sunset" :class="{ selected: themeMode==='sunset' }" @click="setTheme('sunset')" title="暮色"></button>
+            <span style="color:var(--muted);font-size:12px;margin-left:4px">{{ themeLabel }}</span>
+          </div>
+        </div>
+      </header>
+      <section v-if="ready" class="card" style="margin:12px; padding:12px; display:flex; align-items:center; gap:8px;">
+        <div style="font-weight:600;">管理员登录</div>
+        <input :value="adminLogin.username" @input="adminLogin.username=$event.target.value" placeholder="用户名" style="flex:0 0 160px;" />
+        <input :value="adminLogin.password" @input="adminLogin.password=$event.target.value" type="password" placeholder="密码" style="flex:0 0 160px;" />
+        <button @click="doAdminLogin">登录</button>
+        <div v-if="adminToken" style="color:var(--muted); font-size:12px;">已登录</div>
+        <button v-if="adminToken" @click="logoutAdmin" style="color:#ef4444;">退出</button>
+      </section>
+          <!-- 支付异常监控入口统一移至导航链接 -->
+      <main class="content">
+        <section v-if="tab==='activity'" class="card">
+          <h2>活动管理</h2>
+          <p>在此维护分类、创建与编辑活动、管理活动状态。</p>
+
+          <h3>分类管理</h3>
+          <div class="category-actions">
+            <input v-model="newCategory" placeholder="新增分类名称" />
+            <button @click="addCategory">新增分类</button>
+          </div>
+          <table class="table">
+            <thead>
+              <tr>
+                <th>名称</th>
+                <th>排序权重</th>
+                <th>类型</th>
+                <th>操作</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="c in sortedCategories" :key="c.id">
+                <td>
+                  <span v-if="!c.editing">{{ c.name }}</span>
+                  <input v-else v-model="c.name" />
+                </td>
+                <td>
+                  <span v-if="!c.editing">{{ c.weight ?? 0 }}</span>
+                  <input v-else type="number" v-model.number="c.weight" />
+                </td>
+                <td>{{ c.builtin ? '基础' : '自定义' }}</td>
+                <td>
+                  <button v-if="!c.editing" @click="c.editing=true">编辑</button>
+                  <button v-else @click="saveCategory(c)">保存</button>
+                  <button @click="deleteCategory(c)" :disabled="c.builtin">删除</button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+
+          <h3 style="margin-top:16px">活动列表</h3>
+          <div class="actions">
+            <button @click="openActivityForm">新建活动</button>
+            <label style="margin-left:8px; color:#374151">按状态筛选：
+              <select v-model="statusFilter">
+                <option value="全部">全部</option>
+                <option v-for="s in statusOptions" :key="s" :value="s">{{ s }}</option>
+              </select>
+            </label>
+            <label style="margin-left:8px; color:#374151">关键词：
+              <input v-model="activitySearch" placeholder="按标题/地点搜索" style="width:200px" />
+            </label>
+            <label style="margin-left:8px; color:#374151">
+              <input type="checkbox" v-model="showTopOnly" /> 仅显示置顶
+            </label>
+            <label style="margin-left:8px; color:#374151">
+              <input type="checkbox" v-model="showHotOnly" /> 仅显示热点
+            </label>
+            <span style="margin-left:8px; color:#6b7280;">已选 {{ selectedActivityIds.length }} 项</span>
+            <button class="ghost" style="margin-left:8px" @click="selectAllFiltered">全选当前筛选</button>
+            <button class="ghost" style="margin-left:4px" @click="clearSelection">清空选择</button>
+            <span style="margin-left:8px; color:var(--muted)">批量状态：</span>
+            <button style="margin-left:4px" @click="batchUpdateStatus('草稿')" :disabled="!selectedActivityIds.length">置为草稿</button>
+            <button style="margin-left:4px" @click="batchUpdateStatus('已发布')" :disabled="!selectedActivityIds.length">发布</button>
+            <button style="margin-left:4px" @click="batchUpdateStatus('已结束')" :disabled="!selectedActivityIds.length">结束</button>
+            <button style="margin-left:4px" class="ghost" @click="batchUpdateStatus('已取消')" :disabled="!selectedActivityIds.length">取消</button>
+            <span style="margin-left:12px; color:var(--muted)">本地数据：</span>
+            <button class="ghost" style="margin-left:4px" @click="saveToLocal">保存到本地</button>
+            <button class="ghost" style="margin-left:4px" @click="loadFromLocal">从本地恢复</button>
+            <button class="ghost" style="margin-left:4px" @click="resetToDefault">重置示例数据</button>
+            <span style="margin-left:12px; color:var(--muted)">数据备份：</span>
+            <button style="margin-left:4px" @click="exportData">导出JSON</button>
+            <button style="margin-left:4px" @click="triggerImport">导入JSON</button>
+            <input type="file" accept="application/json" ref="importFileInput" @change="handleImportFile" style="display:none" />
+            <label style="margin-left:12px; color:var(--muted); display:inline-flex; align-items:center; gap:6px;">
+              满员提醒阈值(%)
+              <input type="number" min="0" max="100" v-model.number="fullAlertPercent" style="width:90px" />
+            </label>
+            <label style="margin-left:12px; color:var(--muted); display:inline-flex; align-items:center; gap:6px;">
+              主题
+              <select v-model="themeMode" style="width:auto">
+                <option value="system">跟随系统</option>
+                <option value="dark">暗色</option>
+                <option value="light">明色</option>
+              </select>
+            </label>
+          </div>
+          <table class="table">
+            <thead>
+              <tr>
+                <th>选择</th>
+                <th>标题</th>
+                <th>分类</th>
+                <th>时间</th>
+                <th>地点</th>
+                <th>分组</th>
+                <th>人数</th>
+                <th>金额</th>
+                <th>属性</th>
+                <th>状态</th>
+                <th>操作</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-if="displayedActivities.length === 0" class="empty-row">
+                <td colspan="11">暂无活动数据</td>
+              </tr>
+              <tr v-for="a in displayedActivities" :key="a.id">
+                <td>
+                  <input type="checkbox" :value="a.id" v-model="selectedActivityIds" />
+                </td>
+                <td>{{ a.title }}</td>
+                <td>{{ renderCategoryNames(a.categoryIds) }}</td>
+                <td>{{ a.start }} - {{ a.end }}</td>
+                <td>{{ a.place || (a.lat && a.lng ? (a.lat.toFixed(6) + ', ' + a.lng.toFixed(6)) : '') }}</td>
+                <td>{{ Array.isArray(a.groups) ? a.groups.join('、') : (a.group || '') }}</td>
+                <td>{{ a.enrolled }} / {{ a.max }}（候补{{ (a.waitlist ?? 0) }}）</td>
+                <td>¥{{ Number(a.price || 0).toFixed(2) }}</td>
+                <td>
+                  <span v-if="a.isTop" class="attr-badge attr-top">置顶</span>
+                  <span v-if="a.isHot" class="attr-badge attr-hot">热点</span>
+                </td>
+                <td>
+                  <span class="status-badge" :class="'status-' + a.status">{{ a.status }}</span>
+                  <select v-model="a.status" @change="changeStatus(a)">
+                    <option v-for="s in statusOptions" :key="s" :value="s">{{ s }}</option>
+                  </select>
+                </td>
+                <td>
+                  <button @click="openEditActivity(a)">编辑</button>
+                  <button @click="endActivity(a)" :disabled="a.status==='已结束'" style="margin-left:8px">结束</button>
+                  <button @click="cancelActivity(a)" :disabled="a.status==='已取消'" class="ghost" style="margin-left:4px">取消</button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </section>
+
+        <section v-if="tab==='member'" class="card">
+          <h2>会员管理</h2>
+          <p>浏览会员列表、查看详情、调整分组、禁用账号。</p>
+          <table class="table">
+            <thead>
+              <tr>
+                <th>用户ID</th>
+                <th>英文名</th>
+                <th>性别</th>
+                <th>年龄</th>
+                <th>国籍</th>
+                <th>注册时间</th>
+                <th>分组</th>
+                <th>累计参与</th>
+                <th>状态</th>
+                <th>操作</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="m in members" :key="m.id">
+                <td>{{ m.id }}</td>
+                <td>{{ m.nameEn }}</td>
+                <td>{{ m.gender }}</td>
+                <td>{{ m.age }}</td>
+                <td>{{ m.flag }} {{ m.nation }}</td>
+                <td>{{ m.registeredAt }}</td>
+                <td>
+                  <select :value="m.group" @change="updateMemberGroup(m, $event.target.value)">
+                    <option v-for="g in memberGroups" :key="g" :value="g">{{ g }}</option>
+                  </select>
+                </td>
+                <td>{{ m.totalParticipations }}</td>
+                <td>{{ m.disabled ? '已禁用' : '正常' }}</td>
+                <td>
+                  <button @click="openMemberDetail(m)">详情</button>
+                  <button class="ghost" style="margin-left:4px" @click="toggleDisableMember(m)">{{ m.disabled ? '解除禁用' : '禁用账号' }}</button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+          <div class="actions">
+            <span style="color:var(--muted)">本地数据：</span>
+            <button class="ghost" style="margin-left:4px" @click="saveToLocal">保存到本地</button>
+            <button class="ghost" style="margin-left:4px" @click="loadFromLocal">从本地恢复</button>
+            <button class="ghost" style="margin-left:4px" @click="resetToDefault">重置示例数据</button>
+            <span style="margin-left:12px; color:var(--muted)">数据备份：</span>
+            <button style="margin-left:4px" @click="exportData">导出JSON</button>
+            <button style="margin-left:4px" @click="triggerImport">导入JSON</button>
+            <input type="file" accept="application/json" ref="importFileInput" @change="handleImportFile" style="display:none" />
+          </div>
+
+          <div v-if="showMemberModal" class="modal-backdrop">
+            <div class="modal">
+              <h3>会员详情</h3>
+              <div class="form-grid">
+                <label>用户ID<input :value="memberDetail.id" disabled /></label>
+                <label>英文名<input :value="memberDetail.nameEn" disabled /></label>
+                <label>性别<input :value="memberDetail.gender" disabled /></label>
+                <label>年龄<input :value="memberDetail.age" disabled /></label>
+                <label>国籍<input :value="memberDetail.nation" disabled /></label>
+                <label>注册时间<input :value="memberDetail.registeredAt" disabled /></label>
+                <label>分组
+                  <select :value="memberDetail.group" disabled>
+                    <option v-for="g in memberGroups" :key="g" :value="g">{{ g }}</option>
+                  </select>
+                </label>
+                <label>累计参与<input :value="memberDetail.totalParticipations" disabled /></label>
+                <label>状态<input :value="memberDetail.disabled ? '已禁用' : '正常'" disabled /></label>
+              </div>
+              <div class="modal-actions">
+                <button class="ghost" @click="closeMemberModal">关闭</button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section v-if="tab==='stats'" class="card">
+          <h2>数据统计</h2>
+          <p>活动参与、支付统计、趋势图与导出功能。</p>
+          <div class="actions">
+            <button @click="fetchStatsOverview">查看统计概览</button>
+          </div>
+          <div v-if="statsOverview" style="margin-top:12px;display:grid;grid-template-columns: repeat(2, 1fr);gap:12px;">
+            <div class="card" style="padding:12px;">
+              <div style="color:var(--muted);font-size:12px;">总订单数</div>
+              <div style="font-size:22px;font-weight:600;">{{ statsOverview.totalOrders }}</div>
+            </div>
+            <div class="card" style="padding:12px;">
+              <div style="color:var(--muted);font-size:12px;">已支付订单</div>
+              <div style="font-size:22px;font-weight:600;">{{ statsOverview.paidOrders }}</div>
+            </div>
+            <div class="card" style="padding:12px;">
+              <div style="color:var(--muted);font-size:12px;">累计支付金额</div>
+              <div style="font-size:22px;font-weight:600;">¥{{ Number(statsOverview.totalPaidAmount || 0).toFixed(2) }}</div>
+            </div>
+            <div class="card" style="padding:12px;">
+              <div style="color:var(--muted);font-size:12px;">累计退款金额</div>
+              <div style="font-size:22px;font-weight:600;">¥{{ Number(statsOverview.totalRefundedAmount || 0).toFixed(2) }}</div>
+            </div>
+          </div>
+          <div class="card" style="margin-top:16px; padding:12px;">
+            <div style="display:flex; gap:8px; align-items:center;">
+              <label>开始日期 <input type="date" v-model="dateFrom" /></label>
+              <label>结束日期 <input type="date" v-model="dateTo" /></label>
+              <label>粒度
+                <select v-model="trendGranularity">
+                  <option value="week">周</option>
+                  <option value="month">月</option>
+                </select>
+              </label>
+              <button @click="fetchDailyStats">加载每日统计</button>
+              <button @click="fetchTrends">加载趋势</button>
+              <button @click="exportExcel">导出Excel</button>
+              <button @click="exportPNG">导出图片</button>
+            </div>
+            <canvas id="dailyChart" width="640" height="240" style="margin-top:12px; width:100%; max-width:720px;"></canvas>
+            <canvas id="trendChart" width="800" height="300" style="margin-top:12px; width:100%; max-width:900px;"></canvas>
+            <div v-if="dailyStats && dailyStats.length" style="margin-top:8px;color:var(--muted);font-size:12px;">
+              显示区间：{{ dateFrom }} ~ {{ dateTo }} · 点数 {{ dailyStats.length }}
+            </div>
+            <div style="margin-top:12px;">
+              <div style="font-weight:600; margin-bottom:6px;">分类占比</div>
+              <table class="table">
+                <thead>
+                  <tr><th>分类</th><th>金额</th><th>占比</th></tr>
+                </thead>
+                <tbody>
+                  <tr v-for="cs in categoryShare" :key="cs.categoryId">
+                    <td>{{ cs.categoryName }}</td>
+                    <td>¥{{ Number(cs.amount||0).toFixed(2) }}</td>
+                    <td>{{ (Number(cs.share||0)*100).toFixed(1) }}%</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        
+
+        <section v-if="tab==='voucher'" class="card">
+          <h2>积分支付规则设置</h2>
+          <p>配置抵扣比例、满额条件、阶梯返券与特殊活动返券，并支持测试模拟。</p>
+          <div class="form-grid">
+            <label>抵扣比例<input type="number" step="0.01" min="0" max="1" v-model.number="voucherConfig.discountRate" /></label>
+            <label>最大抵扣金额<input type="number" step="0.01" min="0" v-model.number="voucherConfig.maxDiscount" /></label>
+            <label>满额可用<input type="number" step="0.01" min="0" v-model.number="voucherConfig.minAmount" /></label>
+            <label class="chip" style="margin-top:8px;">
+              <input type="checkbox" v-model="voucherConfig.singleVoucherOnly" /> 单次限用（全局折扣与会员券不叠加）
+            </label>
+          </div>
+          <div class="form-grid" style="grid-template-columns: 1fr;">
+            <label>按类别规则（JSON）
+              <textarea v-model="voucherConfig.categoryRules" rows="4" placeholder='例如：[ { "categoryId":1, "discountRate":0.2, "maxDiscount":20 } ]'></textarea>
+            </label>
+            <label>阶梯返券（JSON）
+              <textarea v-model="voucherConfig.cashbackTiers" rows="4" placeholder='例如：[ { "threshold":0, "rate":0.05 }, { "threshold":200, "rate":0.1 } ]'></textarea>
+            </label>
+            <label>特殊活动返券（JSON）
+              <textarea v-model="voucherConfig.specialActivities" rows="3" placeholder='例如：[ { "activityId":1001, "cashbackMultiplier":2 } ]'></textarea>
+            </label>
+          </div>
+          <div class="actions">
+            <button @click="fetchVoucherConfig">加载配置</button>
+            <button @click="saveVoucherConfig">保存配置</button>
+          </div>
+          <div v-if="voucherConfig && voucherConfig.updatedAt" style="margin-top:8px;color:var(--muted);font-size:12px;">最近更新：{{ voucherConfig.updatedAt }}</div>
+
+          <div class="card" style="margin-top:16px; padding:12px;">
+            <h3>测试模拟</h3>
+            <div class="form-grid">
+              <label>订单金额<input type="number" step="0.01" min="0" v-model.number="simInput.amount" /></label>
+              <label>活动ID（可选）<input type="number" v-model.number="simInput.activityId" /></label>
+              <label>类别ID列表<input v-model="simInput.categoryIdsText" placeholder="例如：1,2" /></label>
+              <label>会员券使用额<input type="number" step="0.01" min="0" v-model.number="simInput.memberVoucherAmount" /></label>
+            </div>
+            <div class="actions">
+              <button @click="runVoucherSimulation">运行模拟</button>
+            </div>
+            <div v-if="simResult" style="margin-top:8px;display:grid;grid-template-columns: repeat(2, 1fr);gap:12px;">
+              <div class="card" style="padding:12px;">
+                <div style="color:var(--muted);font-size:12px;">抵扣金额</div>
+                <div style="font-size:20px;font-weight:600;">¥{{ Number(simResult.discount || 0).toFixed(2) }}</div>
+              </div>
+              <div class="card" style="padding:12px;">
+                <div style="color:var(--muted);font-size:12px;">实付金额</div>
+                <div style="font-size:20px;font-weight:600;">¥{{ Number(simResult.payable || 0).toFixed(2) }}</div>
+              </div>
+              <div class="card" style="padding:12px;">
+                <div style="color:var(--muted);font-size:12px;">返券比例</div>
+                <div style="font-size:20px;font-weight:600;">{{ Number(simResult.cashbackRate*100 || 0).toFixed(1) }}%</div>
+              </div>
+              <div class="card" style="padding:12px;">
+                <div style="color:var(--muted);font-size:12px;">预估返券</div>
+                <div style="font-size:20px;font-weight:600;">¥{{ Number(simResult.cashback || 0).toFixed(2) }}</div>
+              </div>
+            </div>
+          </div>
+        </section>
+      </main>
+
+      <footer class="footer">根据《需求文档》搭建的初版后台骨架</footer>
+
+      <div v-if="notice" class="toast">{{ notice }}</div>
+
+      <div v-if="showActivityModal" class="modal-backdrop">
+        <div class="modal">
+          <h3>{{ editingId ? '编辑活动' : '新建活动' }}</h3>
+          <div class="form-grid">
+            <label>标题<input v-model="activityForm.title" placeholder="活动标题" /><div class="form-error" v-if="formErrors.title">{{ formErrors.title }}</div></label>
+            <label>开始时间<input type="datetime-local" v-model="activityForm.start" /><div class="form-error" v-if="formErrors.start">{{ formErrors.start }}</div></label>
+            <label>结束时间<input type="datetime-local" v-model="activityForm.end" /><div class="form-error" v-if="formErrors.end">{{ formErrors.end }}</div></label>
+            <label>地点<input v-model="activityForm.place" placeholder="地点（可选）" /></label>
+            <div style="margin-top:-8px; margin-bottom:8px;">
+              <button class="ghost" @click="openPlacePicker">地图选址</button>
+            </div>
+            <label>纬度<input type="number" v-model.number="activityForm.lat" placeholder="自动生成" disabled /></label>
+            <label>经度<input type="number" v-model.number="activityForm.lng" placeholder="自动生成" disabled /></label>
+            <label>最小人数<input type="number" min="0" v-model.number="activityForm.min" /><div class="form-error" v-if="formErrors.min">{{ formErrors.min }}</div></label>
+            <label>最大人数<input type="number" min="1" v-model.number="activityForm.max" /><div class="form-error" v-if="formErrors.max">{{ formErrors.max }}</div></label>
+            <label>候补名额<input type="number" min="0" v-model.number="activityForm.waitlist" /><div class="form-error" v-if="formErrors.waitlist">{{ formErrors.waitlist }}</div></label>
+            <label>报名金额（元，整数）
+              <input type="number" min="0" step="1" inputmode="numeric" pattern="[0-9]*" v-model.number="activityForm.price" />
+              <div class="form-error" v-if="formErrors.price">{{ formErrors.price }}</div>
+            </label>
+            <label>已报名人数（用于提醒测试）<input type="number" min="0" v-model.number="activityForm.enrolled" /></label>
+            <label>状态
+              <select v-model="activityForm.status">
+                <option v-for="s in statusOptions" :key="s" :value="s">{{ s }}</option>
+              </select>
+            </label>
+            <label>主图URL<input v-model="activityForm.mainImage" placeholder="https://...（可选）" /></label>
+            <div style="margin-top:-8px; margin-bottom:8px;">
+              <div class="label">主图上传（16:9裁剪）</div>
+              <input type="file" accept="image/*" @change="onMainImageSelect" />
+              <img id="mainImageCropper" style="margin-top:8px; max-width:100%; display:block" />
+              <div style="margin-top:8px">
+                <button class="ghost" @click="applyMainImageCrop">裁剪并保存主图</button>
+              </div>
+            </div>
+            <label>附图URL（逗号分隔）<input v-model="activityForm.imagesText" placeholder="https://... , https://..." /></label>
+            <div style="margin-top:-8px; margin-bottom:8px;">
+              <div class="label">附图上传（可多选）</div>
+              <input type="file" accept="image/*" multiple @change="onImagesSelect" />
+              <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:8px;">
+                <img v-for="(img,idx) in activityForm.images" :key="idx" :src="img" alt="附图" style="width:120px;height:80px;object-fit:cover;border:1px solid #eee;border-radius:6px;" />
+              </div>
+            </div>
+          </div>
+
+          <div class="form-section">
+            <div class="label">所属分类（至少选择1个）</div>
+            <div class="chips">
+              <label v-for="c in categories" :key="c.id" class="chip">
+                <input type="checkbox" :value="c.id" v-model="activityForm.categoryIds" /> {{ c.name }}
+              </label>
+            </div>
+            <div class="form-error" v-if="formErrors.categoryIds">{{ formErrors.categoryIds }}</div>
+          </div>
+
+          <div class="form-section">
+            <div class="label">报名分组（至少选择1个）</div>
+            <div class="chips">
+              <label v-for="g in groupOptions" :key="g" class="chip">
+                <input type="checkbox" :value="g" v-model="activityForm.groups" /> {{ g }}
+              </label>
+            </div>
+            <div class="form-error" v-if="formErrors.groups">{{ formErrors.groups }}</div>
+          </div>
+
+          <div class="form-section">
+            <div class="label">属性</div>
+            <div class="chips">
+              <label class="chip">
+                <input type="checkbox" v-model="activityForm.isTop" /> 置顶
+              </label>
+              <label class="chip">
+                <input type="checkbox" v-model="activityForm.isHot" /> 热点
+              </label>
+            </div>
+          </div>
+
+          <div class="form-section">
+            <div class="label">活动内容（富文本）</div>
+            <div id="rich-editor" style="background:#fff; min-height:160px;"></div>
+          </div>
+
+          <div class="modal-actions">
+            <button @click="saveActivity" :disabled="!isFormValid">{{ editingId ? '保存修改' : '保存' }}</button>
+            <button class="ghost" @click="showActivityModal=false">取消</button>
+          </div>
+        </div>
+      </div>
+      <!-- 地图选址弹窗（移入 #app 内部，避免初始页面被遮挡） -->
+      <div v-if="showPlacePicker" class="modal-backdrop" @click.self="closePlacePicker">
+        <div class="modal" style="position:relative;">
+          <button class="ghost" @click="closePlacePicker" style="position:absolute;right:12px;top:12px;">✕</button>
+          <h3>选择地点</h3>
+          <div class="form-grid" style="grid-template-columns: 1fr auto auto auto;align-items:center;margin-bottom:8px;">
+            <input v-model="placeSearchKeyword" @keydown.down.prevent="moveSelection(1)" @keydown.up.prevent="moveSelection(-1)" @keydown.enter.prevent="chooseSelectedIfAny" placeholder="输入地址关键词，例如：人民广场" />
+            <button class="ghost" @click="searchPlace" :disabled="placeSearching">{{ placeSearching ? '搜索中…' : '搜索地址' }}</button>
+            <button class="ghost" @click="clearPlaceCandidates" :disabled="placeSearching || !(placeSearchResults && placeSearchResults.length)">清除候选</button>
+            <label style="display:flex;align-items:center;gap:6px;color:#9ca3af;">
+              <input type="checkbox" v-model="clearAlsoSelected" /> 同时清空已选坐标
+            </label>
+          </div>
+          <div v-if="placeSearchResults && placeSearchResults.length" style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;margin-bottom:8px;max-height:140px;overflow:auto;">
+            <div style="padding:6px 8px;font-size:12px;color:#6b7280;">为你找到以下地址候选（{{ placeSearchResults.length }}）：</div>
+            <ul style="list-style:none;margin:0;padding:0;">
+                <li v-for="(r, idx) in placeSearchResults" :key="r.id" class="candidate-item" style="border-top:1px solid var(--line);" :class="{ selected: idx === selectedResultIndex }">
+                <button class="ghost" style="width:100%;text-align:left;padding:8px 10px;display:flex;align-items:flex-start;gap:8px;" @click="chooseSearchResult(r)">
+                  <span style="display:inline-block;min-width:22px;text-align:center;background:#1f2937;color:#fff;border-radius:9999px;font-size:12px;padding:2px 6px;">{{ idx + 1 }}</span>
+                  <span>
+                    <div>{{ r.name }}</div>
+                    <div style="font-size:12px;color:#6b7280;">{{ r.district }}（{{ r.category }}）</div>
+                  </span>
+                </button>
+              </li>
+            </ul>
+          </div>
+          <div v-if="placeSearchResults && placeSearchResults.length" class="actions" style="display:flex;align-items:center;gap:8px;">
+            <button class="ghost" @click="prevPlacePage" :disabled="placeSearching || placePage <= 0">上一页</button>
+            <span style="color:var(--muted)">第 {{ placePage + 1 }} 页</span>
+            <button class="ghost" @click="nextPlacePage" :disabled="placeSearching || !hasNextPlace">下一页</button>
+            <label style="margin-left:8px;color:var(--muted)">每页
+              <select v-model.number="pageSize">
+                <option :value="8">8</option>
+                <option :value="12">12</option>
+                <option :value="20">20</option>
+              </select>
+            </label>
+          </div>
+          <div id="mapContainer" style="width:100%;height:320px;"></div>
+          <div style="margin-top:6px;color:#4b5563;font-size:12px;">
+            已选坐标：
+            <span v-if="selectedLatLng">{{ selectedLatLng.lat.toFixed(6) }}, {{ selectedLatLng.lng.toFixed(6) }}</span>
+            <span v-else>未选择</span>
+          </div>
+          <div class="modal-actions">
+            <button class="ghost" @click="closePlacePicker">关闭</button>
+            <button @click="confirmPlacePicker">确定</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+    <!-- Quill 富文本编辑器 -->
+    <script src="https://cdn.jsdelivr.net/npm/quill@1.3.7/dist/quill.min.js"></script>
+    <!-- Cropper 图片裁剪 -->
+    <script src="https://cdn.jsdelivr.net/npm/cropperjs@1.5.13/dist/cropper.min.js"></script>
+    <!-- Leaflet 地图 -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <!-- Chart.js 用于趋势图 -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <!-- 统一 HTTP 封装：附带令牌与 401/403 处理 -->
+    <script src="./js/http.js"></script>
+    <script>
+      window.errorsLimit = window.errorsLimit ?? 50;
+      window.adminLogin = window.adminLogin ?? { username:'', password:'' };
+      window.paymentErrors = window.paymentErrors || [];
+      window.updateErrorsLimit = window.updateErrorsLimit || function(){ /* noop until app mounts */ };
+      window.doAdminLogin = window.doAdminLogin || function(){ /* noop until app mounts */ };
+      window.logoutAdmin = window.logoutAdmin || function(){ /* noop until app mounts */ };
+      window.fetchPaymentErrors = window.fetchPaymentErrors || function(){ /* noop until app mounts */ };
+    </script>
+    <script src="./js/app.js?v=20251004a"></script>
+  </body>
+  </html>

@@ -1,0 +1,35 @@
+# macOS
+.DS_Store
+
+# Editors
+.vscode/
+.idea/
+
+# Node & build artifacts
+node_modules/
+dist/
+build/
+coverage/
+.cache/
+.vite/
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Env & secrets
+*.env
+server/.env
+miniprogram/.env
+admin-portal/.env
+
+# Uploads & generated
+server/uploads/
+server/reports/
+
+# WeChat mini-program private config
+miniprogram/project.private.config.json

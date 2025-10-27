@@ -1,0 +1,58 @@
+<view class="container">
+  <view class="profile">
+    <image class="avatar" src="{{avatarUrl || 'https://i.pravatar.cc/120'}}" />
+    <view class="info">
+      <view class="row">
+        <text class="value">{{englishName || (nickname || '游客')}}</text>
+      </view>
+      <view class="row">
+        <text class="label small">账号：</text>
+        <text class="value small">{{account || (nickname || '未登录')}}</text>
+      </view>
+      <view class="row compact">
+        <text class="label small">我的邀请码：</text>
+        <text class="value small">{{inviteCode || '生成中'}} </text>
+        <button class="mini" size="mini" bindtap="onCopyInvite">复制</button>
+      </view>
+      <!-- 积分卡片已移至头像下方，整行显示 -->
+    </view>
+  </view>
+
+  <view class="points-card">
+    <image class="points-bg" src="../../assets/starbg.png" mode="aspectFill"/>
+    <view class="points-left">
+      <text class="points-title">我的积分</text>
+      <text class="points-value">{{myPoints}}</text>
+    </view>
+    <image class="points-icon" src="../../assets/star.png" mode="aspectFit"/>
+  </view>
+
+  <view wx:if="{{loggedIn}}" class="list">
+    <navigator class="nav-item" url="/pages/mine/info/info">
+      <image class="nav-icon" src="{{navIconProfile}}" mode="aspectFit"/>
+      <text class="nav-text">个人信息编辑</text>
+      <image class="nav-arrow" src="{{navArrow}}" mode="aspectFit"/>
+    </navigator>
+    <navigator class="nav-item" url="/pages/mine/status/status">
+      <image class="nav-icon" src="{{navIconStatus}}" mode="aspectFit"/>
+      <text class="nav-text">活动报名状态查询</text>
+      <image class="nav-arrow" src="{{navArrow}}" mode="aspectFit"/>
+    </navigator>
+    <navigator class="nav-item" url="/pages/mine/refund/refund">
+      <image class="nav-icon" src="{{navIconRefund}}" mode="aspectFit"/>
+      <text class="nav-text">取消与退款记录</text>
+      <image class="nav-arrow" src="{{navArrow}}" mode="aspectFit"/>
+    </navigator>
+    <navigator class="nav-item" url="/pages/mine/voucher/voucher">
+      <image class="nav-icon" src="{{navIconVoucher}}" mode="aspectFit"/>
+      <text class="nav-text">积分支付</text>
+      <image class="nav-arrow" src="{{navArrow}}" mode="aspectFit"/>
+    </navigator>
+    <navigator class="nav-item" url="/pages/mine/password/password">
+      <image class="nav-icon" src="{{navIconPassword}}" mode="aspectFit"/>
+      <text class="nav-text">密码修改</text>
+      <image class="nav-arrow" src="{{navArrow}}" mode="aspectFit"/>
+    </navigator>
+  </view>
+  <view wx:else class="auth-tip">请先登录以查看个人中心</view>
+</view>

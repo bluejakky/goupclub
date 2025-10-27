@@ -1,0 +1,11 @@
+.page {
+  padding: 16rpx 24rpx 120rpx;
+}
+.section { margin-bottom: 24rpx; }
+.section-title { font-size: 30rpx; font-weight: 600; margin-bottom: 16rpx; }
+.row { display: flex; align-items: center; margin-bottom: 16rpx; }
+.label { width: 160rpx; color: #666; }
+.input { flex: 1; border: 1px solid #eee; border-radius: 8rpx; padding: 12rpx; background: #fff; }
+.input[disabled] { background: #f7f7f7; color: #999; }
+.footer { position: fixed; left: 0; right: 0; bottom: 0; padding: 16rpx 24rpx; background: #fff; box-shadow: 0 -6rpx 20rpx rgba(0,0,0,0.06); }
+.primary { background: #07c160; color: #fff; border-radius: 12rpx; }
