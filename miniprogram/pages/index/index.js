@@ -1,181 +1,90 @@
+const api = require('../../utils/api.js')
+
 Page({
   data: {
     keywords: '',
-    selectedCategory: '',
-    // 下拉选项
-    languageOptions: ['汉语', '英语', '小语种'],
-    typeOptions: ['志愿', '主题'],
-    selectedLanguage: '',
-    selectedType: '',
-    langIndex: 0,
-    typeIndex: 0,
-    isLangOpen: false,
-    isTypeOpen: false,
-    isDropdownMaskVisible: false,
-    // 旧分类备用（不再在 UI 显示）
-    categories: [
-      { name: '汉语' },
-      { name: '英语' },
-      { name: '小语种' },
-      { name: '志愿' },
-      { name: '主题' }
-    ],
-    activities: [
-      {
-        id: 1,
-        title: '英语角交流',
-        category: '英语',
-        start: '2025-10-10 19:00',
-        end: '2025-10-10 21:00',
-        place: '市图书馆',
-        signed: 12,
-        max: 20,
-        price: 20,
-        isTop: true,
-        isHot: true,
-        publishedAt: '2025-10-01 12:00',
-        mainImage: 'https://picsum.photos/400/225?random=1',
-        images: ['https://picsum.photos/800/450?random=11'],
-        flags: ['🇬🇧','🇺🇸','🇨🇦','🇨🇳','🇦🇺']
-      },
-      {
-        id: 2,
-        title: '志愿者公园清洁',
-        category: '志愿',
-        start: '2025-10-12 09:00',
-        end: '2025-10-12 12:00',
-        place: '城市公园',
-        signed: 35,
-        max: 50,
-        price: 0,
-        isTop: false,
-        isHot: true,
-        publishedAt: '2025-10-05 08:00',
-        mainImage: 'https://picsum.photos/400/225?random=2',
-        images: ['https://picsum.photos/800/450?random=12'],
-        flags: ['🇨🇳','🇨🇳','🇨🇳','🇭🇰','🇲🇴']
-      },
-      {
-        id: 3,
-        title: '西班牙语学习分享',
-        category: '小语种',
-        start: '2025-10-15 19:00',
-        end: '2025-10-15 21:00',
-        place: '社区活动室',
-        signed: 8,
-        max: 25,
-        price: 10,
-        isTop: false,
-        isHot: false,
-        publishedAt: '2025-10-07 18:30',
-        mainImage: 'https://picsum.photos/400/225?random=3',
-        images: ['https://picsum.photos/800/450?random=13'],
-        flags: ['🇪🇸','🇲🇽','🇨🇴','🇦🇷']
-      }
-    ]
-  },
-  onLoad() {
-    // 排序：置顶优先，其次按发布时间倒序，其次按开始时间
-    const sorted = [...this.data.activities].sort((a, b) => {
-      if ((a.isTop ? 1 : 0) !== (b.isTop ? 1 : 0)) return (b.isTop ? 1 : 0) - (a.isTop ? 1 : 0);
-      const ap = a.publishedAt || a.start || '';
-      const bp = b.publishedAt || b.start || '';
-      return bp.localeCompare(ap);
-    });
-    this.setData({ activities: sorted, fullActivities: sorted });
+    searchResults: [],
+    searching: false
   },
   onSearchInput(e) {
     this.setData({ keywords: e.detail.value });
   },
-  onSearch() {
-    this.applyFilters();
-  },
-  // 旧分类点击保留（不再显示）
-  onSelectCategory(e) {
-    const name = e.currentTarget.dataset.name;
-    this.setData({ selectedCategory: name }, () => this.applyFilters());
-  },
-  // 新下拉选择事件
-  onLangChange(e) {
-    const idx = e.detail.value;
-    const val = this.data.languageOptions[idx];
-    this.setData({ langIndex: idx, selectedLanguage: val }, () => this.applyFilters());
-  },
-  onTypeChange(e) {
-    const idx = e.detail.value;
-    const val = this.data.typeOptions[idx];
-    this.setData({ typeIndex: idx, selectedType: val }, () => this.applyFilters());
-  },
-  toggleLang() {
-    const next = !this.data.isLangOpen;
-    this.setData({
-      isLangOpen: next,
-      isTypeOpen: false,
-      isDropdownMaskVisible: next
-    });
-  },
-  toggleType() {
-    const next = !this.data.isTypeOpen;
-    this.setData({
-      isTypeOpen: next,
-      isLangOpen: false,
-      isDropdownMaskVisible: next
-    });
-  },
-  closeDropdowns() {
-    this.setData({ isLangOpen: false, isTypeOpen: false, isDropdownMaskVisible: false });
-  },
-  selectLang(e) {
-    const idx = e.currentTarget.dataset.index;
-    const val = this.data.languageOptions[idx];
-    this.setData({ langIndex: idx, selectedLanguage: val, isLangOpen: false, isDropdownMaskVisible: false }, () => this.applyFilters());
-  },
-  selectType(e) {
-    const idx = e.currentTarget.dataset.index;
-    const val = this.data.typeOptions[idx];
-    this.setData({ typeIndex: idx, selectedType: val, isTypeOpen: false, isDropdownMaskVisible: false }, () => this.applyFilters());
-  },
-  noop() {},
-  applyFilters() {
-    const kw = (this.data.keywords || '').trim().toLowerCase();
-    const lang = (this.data.selectedLanguage || '').trim();
-    const type = (this.data.selectedType || '').trim();
-    let list = [...(this.data.fullActivities || this.data.activities || [])];
-    if (kw) {
-      list = list.filter(a => (a.title || '').toLowerCase().includes(kw) || (a.place || '').toLowerCase().includes(kw));
+  onSearchConfirm() {
+    const kw = (this.data.keywords || '').trim();
+    if (!kw) {
+      wx.showToast({ title: '请输入关键词', icon: 'none' });
+      return;
     }
-    // 语言或类型与示例数据中的 category 字段对应，二者为或关系
-    if (lang && type) {
-      list = list.filter(a => a.category === lang || a.category === type);
-    } else if (lang) {
-      list = list.filter(a => a.category === lang);
-    } else if (type) {
-      list = list.filter(a => a.category === type);
+    this.setData({ searching: true });
+    wx.showToast({ title: '搜索中', icon: 'none' });
+    api.searchActivities({ keyword: kw })
+      .then(list => {
+        const items = Array.isArray(list) ? list : (Array.isArray(list?.items) ? list.items : []);
+        this.setData({ searchResults: items, searching: false });
+        if (!items.length) {
+          wx.showToast({ title: '未找到相关活动', icon: 'none' });
+          return;
+        }
+        // 自动跳转到最匹配的一条活动：优先标题完全匹配，其次包含匹配，否则取第一条
+        const lowerkw = kw.toLowerCase();
+        const exact = items.find(x => String(x.title || '').toLowerCase() === lowerkw);
+        const contains = items.find(x => String(x.title || '').toLowerCase().includes(lowerkw)) || items.find(x => String(x.place || '').toLowerCase().includes(lowerkw));
+        const target = exact || contains || items[0];
+        const id = Number(target?.id);
+        if (Number.isFinite(id) && id > 0) {
+          try { wx.setStorageSync('lastActivityDetail', target); } catch (_) {}
+          wx.navigateTo({ url: `/pages/detail/detail?id=${id}` });
+        } else {
+          wx.showToast({ title: '数据异常，无法打开活动', icon: 'none' });
+        }
+      })
+      .catch(() => {
+        this.setData({ searching: false });
+        wx.showToast({ title: '搜索失败，请稍后重试', icon: 'none' });
+      });
+  },
+  onOpenDetail(e) {
+    const id = Number(e.currentTarget.dataset.id);
+    const item = (this.data.searchResults || []).find(x => Number(x.id) === id);
+    if (item) {
+      try { wx.setStorageSync('lastActivityDetail', item); } catch (_) {}
     }
-    // 保持排序规则
-    list = list.sort((a, b) => {
-      if ((a.isTop ? 1 : 0) !== (b.isTop ? 1 : 0)) return (b.isTop ? 1 : 0) - (a.isTop ? 1 : 0);
-      const ap = a.publishedAt || a.start || '';
-      const bp = b.publishedAt || b.start || '';
-      return bp.localeCompare(ap);
-    });
-    this.setData({ activities: list });
+    wx.navigateTo({ url: `/pages/detail/detail?id=${id}` });
   },
-  openDetail(e) {
-    const id = e.currentTarget.dataset.id;
-    wx.navigateTo({ url: '/pages/detail/detail?id=' + id });
+  onNeedworkTap() {
+    wx.navigateTo({ url: '/pages/cooperate/cooperate' })
+  },
+  onShow() {},
+  onGoPlay() {
+    wx.switchTab({ url: '/pages/work/work' });
+  },
+  goWork() {
+    wx.switchTab({ url: '/pages/work/work' });
+  },
+  goMine() {
+    wx.switchTab({ url: '/pages/mine/mine' });
   },
 
-  onReady() {
+  // 快捷跳转：设置预过滤并进入“来玩”
+  setPrefilterAndGo(pre) {
+    try { wx.setStorageSync('prefilter', pre || {}); } catch (_) {}
+    wx.switchTab({ url: '/pages/work/work' });
   },
-
-
-
-
-
-
-
-
-
-
+  // 语言图点击：nihao->汉语，hello->英语，其它->小语种
+  onLangTap(e) {
+    const key = String(e.currentTarget.dataset.key || '').toLowerCase();
+    const lang = key === 'nihao' ? '汉语' : key === 'hello' ? '英语' : '小语种';
+    this.setPrefilterAndGo({ lang });
+  },
+  // 分类图点击：语言跳转为 lang；主题/志愿跳转为 type
+  onCategoryTap(e) {
+    const cat = String(e.currentTarget.dataset.cat || '');
+    if (cat === '主题' || cat === '志愿') {
+      this.setPrefilterAndGo({ type: cat });
+    } else if (cat === '汉语' || cat === '英语' || cat === '小语种') {
+      this.setPrefilterAndGo({ lang: cat });
+    } else {
+      this.setPrefilterAndGo({});
+    }
+  }
 });

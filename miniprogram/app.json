@@ -1,17 +1,14 @@
 {
   "pages": [
+    "pages/work/work",
     "pages/index/index",
     "pages/login/login",
+
     "pages/login/register/register",
     "pages/mine/mine",
     "pages/detail/detail",
     "pages/pay/pay",
-    "pages/mine/info/info",
-    "pages/mine/status/status",
-    "pages/mine/refund/refund",
-    "pages/mine/voucher/voucher",
-    "pages/mine/password/password",
-    "pages/webview/webview"
+    "pages/cooperate/cooperate"
   ],
   "window": {
     "navigationBarTitleText": "GoUp",
@@ -25,7 +22,7 @@
     "borderStyle": "black",
     "list": [
       {
-        "pagePath": "pages/index/index",
+        "pagePath": "pages/work/work",
         "text": "来玩",
         "iconPath": "assets/tab_play_48.png",
         "selectedIconPath": "assets/tab_play_96.png"

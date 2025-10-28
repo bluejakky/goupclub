@@ -1,68 +1,33 @@
-<view class="container">
-  <!-- 顶部空间已移除星球效果 -->
-  <view class="search">
-      <view class="search-input">
-        <view class="search-icon-btn" bindtap="onSearch">
-          <image src="/assets/search.png" mode="aspectFit" />
-        </view>
-        <input type="text" placeholder="寻找你感兴趣的活动" placeholder-style="font-size: 24rpx;" bindinput="onSearchInput"/>
-      </view>
-    </view>
-
-  <view class="filters">
-    <view class="dropdown" catchtap="noop">
-      <view class="dropdown-trigger" bindtap="toggleLang">
-        <text class="dropdown-label">{{selectedLanguage || '选择语种'}}</text>
-        <image class="dropdown-icon {{isLangOpen ? 'open' : ''}}" src="/assets/arrow-down.png" mode="widthFix" />
-      </view>
-      <view wx:if="{{isLangOpen}}" class="dropdown-list" catchtap="noop">
-        <block wx:for="{{languageOptions}}" wx:key="index">
-          <view class="dropdown-item" bindtap="selectLang" data-index="{{index}}">{{item}}</view>
-        </block>
-      </view>
-    </view>
-    <view class="dropdown" catchtap="noop">
-      <view class="dropdown-trigger" bindtap="toggleType">
-        <text class="dropdown-label">{{selectedType || '选择类型'}}</text>
-        <image class="dropdown-icon {{isTypeOpen ? 'open' : ''}}" src="/assets/arrow-down.png" mode="widthFix" />
-      </view>
-      <view wx:if="{{isTypeOpen}}" class="dropdown-list" catchtap="noop">
-        <block wx:for="{{typeOptions}}" wx:key="index">
-          <view class="dropdown-item" bindtap="selectType" data-index="{{index}}">{{item}}</view>
-        </block>
-      </view>
+<view class="page with-footer">
+  <view class="topbar">
+    <input class="search-input" type="text" placeholder="" confirm-type="search" bindinput="onSearchInput" bindconfirm="onSearchConfirm" />
+    <image class="needwork" src="../../assets/needwork.png" mode="aspectFit" bindtap="onNeedworkTap" />
+  </view>
+  <view class="main">
+    <view class="main-image-wrap">
+      <image class="main-image" src="../../assets/mainpage.PNG" mode="widthFix" />
+      <!-- 语言快捷热点：你好/hello/其他语言 -->
+      <view class="hotspot hs-nihao" bindtap="onLangTap" data-key="nihao"></view>
+      <view class="hotspot hs-hello" bindtap="onLangTap" data-key="hello"></view>
+      <view class="hotspot hs-other" bindtap="onLangTap" data-key="other"></view>
+      <!-- 分类热点：汉语/英语/小语种/主题/志愿 -->
+      <view class="hotspot hs-cat-cn" bindtap="onCategoryTap" data-cat="汉语"></view>
+      <view class="hotspot hs-cat-en" bindtap="onCategoryTap" data-cat="英语"></view>
+      <view class="hotspot hs-cat-minor" bindtap="onCategoryTap" data-cat="小语种"></view>
+      <view class="hotspot hs-cat-theme" bindtap="onCategoryTap" data-cat="主题"></view>
+      <view class="hotspot hs-cat-volunteer" bindtap="onCategoryTap" data-cat="志愿"></view>
     </view>
   </view>
-  <view wx:if="{{isDropdownMaskVisible}}" class="dropdown-mask" bindtap="closeDropdowns"></view>
 
-  <view class="list" id="activityList">
-    <block wx:for="{{activities}}" wx:key="id">
-      <view class="card" bindtap="openDetail" data-id="{{item.id}}">
-        <!-- 第一行：活动标题 -->
-        <view class="title-row">{{item.title}}</view>
-        <!-- 第二行：图片 -->
-        <image class="thumb" mode="aspectFill" src="{{item.mainImage}}" />
-        <!-- 第三行：左标签，中地址，右时间 -->
-        <view class="meta-row">
-          <view class="meta-left">
-            <text wx:if="{{item.isTop}}" class="tag top">置顶</text>
-            <text wx:if="{{item.isHot}}" class="tag hot">热点</text>
-          </view>
-          <view class="meta-center">{{item.place}}</view>
-          <view class="meta-right">{{item.start}}</view>
-        </view>
-        <!-- 第四行：报名会员国旗 + 已报名人数 -->
-        <view class="signup-row">
-          <view class="flags">
-            <block wx:for="{{item.flags}}" wx:key="index">
-              <text class="flag">{{item}}</text>
-            </block>
-          </view>
-          <view class="signup-count">已报名人数 {{item.signed}}/{{item.max}}</view>
-          <view class="detail-btn" catchtap="openDetail" data-id="{{item.id}}">活动详情</view>
-        </view>
-      </view>
-    </block>
-    <view wx:if="{{activities.length===0}}" class="empty">未找到相关活动</view>
+  <!-- 搜索结果区域已移除：搜索后直接跳转到活动详情页面 -->
+  <view class="bottom-tab">
+    <view class="tab-item" bindtap="goWork" data-key="work">
+      <image class="tab-icon" src="../../assets/tab_play_48.png" mode="aspectFit" />
+      <text class="tab-label">来玩</text>
+    </view>
+    <view class="tab-item" bindtap="goMine" data-key="mine">
+      <image class="tab-icon" src="../../assets/tab_mine_48.png" mode="aspectFit" />
+      <text class="tab-label">我的</text>
+    </view>
   </view>
 </view>

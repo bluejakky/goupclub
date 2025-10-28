@@ -28,7 +28,7 @@
       "outputPath": ""
     }
   },
-  "libVersion": "2.31.0",
+  "libVersion": "2.30.4",
   "compileType": "miniprogram",
   "simulatorPluginLibVersion": {},
   "packOptions": {

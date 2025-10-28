@@ -1,0 +1,25 @@
+<view class="page">
+  <image class="banner" src="../../assets/hezuotop.png" mode="widthFix"></image>
+  <view class="tip">每个会员最多提交两次，剩余：{{remaining}}/2</view>
+  <view class="form">
+    <view class="row">
+      <text class="label">姓名</text>
+      <input class="input" value="{{name}}" bindinput="onInput" data-field="name" placeholder="请输入姓名" />
+    </view>
+    <view class="row">
+      <text class="label">电话</text>
+      <input class="input" value="{{phone}}" bindinput="onInput" data-field="phone" placeholder="请输入手机号或联系方式" />
+    </view>
+    <view class="row">
+      <text class="label">企业名称</text>
+      <input class="input" value="{{company}}" bindinput="onInput" data-field="company" placeholder="请输入企业或组织名称" />
+    </view>
+    <view class="row">
+      <text class="label">合作简介</text>
+      <textarea class="textarea" value="{{brief}}" bindinput="onInput" data-field="brief" placeholder="请简单描述合作意向与内容"></textarea>
+    </view>
+  </view>
+  <view class="footer">
+    <button class="primary" bindtap="onSubmit" disabled="{{remaining<=0}}">提交申请</button>
+  </view>
+</view>

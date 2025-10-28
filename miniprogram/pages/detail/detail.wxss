@@ -12,7 +12,7 @@
 .bottom-bar { position: fixed; left: 0; right: 0; bottom: 0; display: flex; gap: 16rpx; padding: 16rpx; background: #fff; box-shadow: 0 -8rpx 16rpx rgba(0,0,0,0.06); }
 .share { flex: 1; background: #f1f5f9; color: #0f172a; border-radius: 12rpx; }
 .apply { flex: 1; background: #7c3aed; color: #fff; border-radius: 12rpx; }
-.share-icon-only { width: 120rpx; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.share-icon-only { border: none; background: transparent; padding: 0; margin: 0; }
 .meta-icon { width: 28rpx; height: 28rpx; }
 .share-content { display: flex; flex-direction: column; align-items: center; gap: 6rpx; }
 .share-icon { width: 32rpx; height: 32rpx; }
@@ -21,4 +21,5 @@
 .flags { display: flex; align-items: center; gap: 6rpx; }
 .flag { width: 36rpx; height: 36rpx; line-height: 36rpx; text-align: center; border-radius: 50%; background: #f3f4f6; font-size: 22rpx; }
 .signup-count { color: #6b7280; }
+.share-icon-only::after { content: none; }
 /* 已移除设计叠层相关样式 */

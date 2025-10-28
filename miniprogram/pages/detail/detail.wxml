@@ -36,10 +36,10 @@
   </view>
 
   <view class="bottom-bar">
-      <view class="share-icon-only">
+      <button class="share-icon-only" open-type="share" hover-class="none">
          <image class="share-icon" src="/assets/share.png" mode="aspectFit"/>
          <text class="share-text">分享</text>
-       </view>
-       <button class="apply" bindtap="onApply">{{ctaText}}</button>
-    </view>
+       </button>
+      <button class="apply" bindtap="onApply">{{ctaText}}</button>
+  </view>
 </view>

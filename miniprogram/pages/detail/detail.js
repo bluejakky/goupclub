@@ -23,8 +23,34 @@ Page({
   },
   onLoad(query) {
     const id = query?.id || null;
-    this.setData({ id });
+    let detail = this.data.detail;
+    try {
+      const cached = wx.getStorageSync('lastActivityDetail') || null;
+      if (cached && (cached.title || cached.mainImage)) {
+        detail = {
+          images: Array.isArray(cached.images) && cached.images.length ? cached.images : (cached.mainImage ? [cached.mainImage] : detail.images),
+          title: cached.title || detail.title,
+          hot: !!cached.isHot,
+          top: !!cached.isTop,
+          start: cached.start || detail.start,
+          end: cached.end || detail.end,
+          place: cached.place || detail.place,
+          signed: Number(cached.enrolled ?? detail.signed),
+          max: Number(cached.max ?? detail.max),
+          flags: Array.isArray(cached.groups) ? cached.groups : detail.flags,
+          price: Number(cached.price ?? detail.price),
+          status: cached.status || detail.status,
+          content: Array.isArray(cached.content) ? cached.content : (typeof cached.content === 'string' ? [cached.content] : detail.content)
+        };
+      }
+    } catch (_) {}
+    // 去重国旗，避免重复显示
+    const flags = Array.isArray(detail.flags) ? detail.flags.filter((f, i, arr) => arr.indexOf(f) === i) : [];
+    this.setData({ id, detail: { ...detail, flags } });
     this.updateCTA();
+    try {
+      wx.showShareMenu({ withShareTicket: true, menus: ['shareAppMessage', 'shareTimeline'] });
+    } catch (_) {}
   },
   updateCTA() {
     const { detail } = this.data;
@@ -79,6 +105,14 @@ Page({
     return {
       title: detail.title,
       path: `/pages/detail/detail?id=${this.data.id || ''}`,
+      imageUrl: detail.images?.[0]
+    };
+  },
+  onShareTimeline() {
+    const { detail } = this.data;
+    return {
+      title: detail.title,
+      query: `id=${this.data.id || ''}`,
       imageUrl: detail.images?.[0]
     };
   }

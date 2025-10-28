@@ -44,16 +44,12 @@ Page({
       const token = res && res.token
       if (!token) throw new Error('无效登录响应')
       wx.setStorageSync('token', token)
-      // 拉取用户信息（昵称与头像）
-      try {
-        const me = await api.getMe()
-        if (me) wx.setStorageSync('user', me)
-      } catch {}
+      // 拉取用户信息（昵称与头像）——后台异步，不阻塞跳转
+      api.getMe().then(me => { if (me) wx.setStorageSync('user', me); }).catch(() => {});
       wx.showToast({ title: '登录成功', icon: 'success' });
-      setTimeout(() => {
-        // 登录成功后统一跳转到“来玩”首页
-        wx.switchTab({ url: '/pages/index/index' });
-      }, 600);
+      // 登录成功后跳转到主页
+       wx.reLaunch({ url: '/pages/index/index' });
+
     } catch (e) {
       const msg = e && e.message ? e.message : '登录失败'
       wx.showToast({ title: msg, icon: 'none' });

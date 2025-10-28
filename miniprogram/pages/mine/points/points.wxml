@@ -1,0 +1,81 @@
+<view class="page">
+  <view class="summary">
+    <view class="card">
+      <text class="label">当前余额</text>
+      <text class="value">{{account.balance || 0}}</text>
+    </view>
+    <view class="card">
+      <text class="label">近 30 天变化</text>
+      <text class="value {{last30Change>=0?'income':'expense'}}">{{last30Change>=0?'+':''}}{{last30Change}}</text>
+    </view>
+  </view>
+
+  <view class="filters">
+    <view class="filter">
+      <text class="filter-label">方向</text>
+      <radio-group class="radio-group" data-key="direction" bindchange="onFilterChange">
+        <label class="radio-item">
+          <radio value="all" checked="{{filter.direction==='all'}}"/> 全部
+        </label>
+        <label class="radio-item">
+          <radio value="income" checked="{{filter.direction==='income'}}"/> 收入
+        </label>
+        <label class="radio-item">
+          <radio value="expense" checked="{{filter.direction==='expense'}}"/> 支出
+        </label>
+      </radio-group>
+    </view>
+
+    <view class="filter">
+      <text class="filter-label">类型</text>
+      <radio-group class="radio-group" data-key="type" bindchange="onFilterChange">
+        <label class="radio-item">
+          <radio value="all" checked="{{filter.type==='all'}}"/> 全部
+        </label>
+        <label class="radio-item">
+          <radio value="settlement" checked="{{filter.type==='settlement'}}"/> 活动结算
+        </label>
+        <label class="radio-item">
+          <radio value="referral" checked="{{filter.type==='referral'}}"/> 邀请奖励
+        </label>
+        <label class="radio-item">
+          <radio value="spend" checked="{{filter.type==='spend'}}"/> 积分支付
+        </label>
+      </radio-group>
+    </view>
+
+    <view class="filter">
+      <text class="filter-label">时间</text>
+      <radio-group class="radio-group" data-key="days" bindchange="onFilterChange">
+        <label class="radio-item">
+          <radio value="7" checked="{{String(filter.days)==='7'}}"/> 7天
+        </label>
+        <label class="radio-item">
+          <radio value="30" checked="{{String(filter.days)==='30'}}"/> 30天
+        </label>
+        <label class="radio-item">
+          <radio value="90" checked="{{String(filter.days)==='90'}}"/> 90天
+        </label>
+        <label class="radio-item">
+          <radio value="all" checked="{{filter.days==='all'}}"/> 全部
+        </label>
+      </radio-group>
+    </view>
+  </view>
+
+  <view class="list">
+    <block wx:for="{{filtered}}" wx:key="id">
+      <view class="item">
+        <view class="left">
+          <text class="type">{{typeMap[item.type] || item.type}}</text>
+          <text class="meta">{{item.origin || '系统'}} {{item.activityId?('· 活动#'+item.activityId):''}} {{item.orderId?('· 订单#'+item.orderId):''}}</text>
+          <text class="time">{{item.createdAt}}</text>
+        </view>
+        <view class="right">
+          <text class="amount {{item.direction==='credit'?'income':'expense'}}">{{item.direction==='credit'?'+':'-'}}{{item.amount}}</text>
+        </view>
+      </view>
+    </block>
+    <view wx:if="{{!filtered.length}}" class="empty">暂无符合条件的流水</view>
+  </view>
+</view>

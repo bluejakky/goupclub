@@ -5,9 +5,10 @@
     <image class="slice" src="/assets/login/register_label.png" style="left: {{564 * designScale}}px; top: {{1075 * designScale}}px; width: {{150 * designScale}}px; height: {{48 * designScale}}px"/>
     <image class="slice" src="/assets/login/login_button_bg.png" style="left: {{61 * designScale}}px; top: {{1135 * designScale}}px; width: {{663 * designScale}}px; height: {{105 * designScale}}px"/>
     <image class="slice" src="/assets/login/phone_quick_label.png" style="left: {{0 * designScale}}px; top: {{955 * designScale}}px; width: {{181 * designScale}}px; height: {{56 * designScale}}px"/>
-    <image class="slice" src="/assets/login/username_bg.png" style="left: {{21 * designScale}}px; top: {{655 * designScale}}px; width: {{743 * designScale}}px; height: {{70 * designScale}}px"/>
-    <image class="slice" src="/assets/login/password_bg.png" style="left: {{21 * designScale}}px; top: {{745 * designScale}}px; width: {{743 * designScale}}px; height: {{70 * designScale}}px"/>
-    
+    <!-- 移除含“请输入用户名/密码”文字的图片切片，改用纯色背景矩形 -->
+    <view class="abs-rect" style="left: {{74 * designScale}}px; top: {{770 * designScale}}px; width: {{723 * designScale}}px; height: {{64 * designScale}}px"></view>
+    <view class="abs-rect" style="left: {{74 * designScale}}px; top: {{961 * designScale}}px; width: {{723 * designScale}}px; height: {{64 * designScale}}px"></view>
+
     <input class="abs-input" style="left: {{74 * designScale}}px; top: {{776 * designScale}}px; width: {{723 * designScale}}px; height: {{54 * designScale}}px" bindinput="onInput" data-field="username"/>
     <input class="abs-input" style="left: {{74 * designScale}}px; top: {{967 * designScale}}px; width: {{723 * designScale}}px; height: {{54 * designScale}}px" password="true" bindinput="onInput" data-field="password"/>
     <view class="btn btn-login" style="left: {{61 * designScale}}px; top: {{1135 * designScale}}px; width: {{663 * designScale}}px; height: {{105 * designScale}}px" bindtap="onSubmit"></view>

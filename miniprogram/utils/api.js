@@ -98,5 +98,23 @@ module.exports = {
   },
   async getInvitationCode(memberId) {
     return request({ url: `/referral/code/${memberId}`, method: 'GET' })
-  }
+  },
+  async searchActivities({ keyword = '' } = {}) {
+    return request({ url: '/activities', method: 'GET', data: { keyword } })
+  },
+  // 查询成员积分账户与近期流水
+  async getMemberPoints(id) {
+    return request({ url: `/members/${id}/points`, method: 'GET' })
+  },
+  // 新增：绑定邀请码（完成注册后）
+  async bindReferral({ memberId, invitationCode, channel = 'manual' }) {
+    return request({ url: '/referral/bind', method: 'POST', data: { memberId, invitationCode, channel } })
+  },
+  getCooperateCount(memberId) {
+    return request({ url: '/cooperate/count', method: 'GET', data: { memberId } })
+  },
+  async submitCooperate(payload) {
+    return request({ url: '/cooperate', method: 'POST', data: payload })
+  },
+  // 查询提交次数与提交申请
 }

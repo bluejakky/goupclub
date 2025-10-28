@@ -38,6 +38,7 @@
 .design-canvas { position: relative; margin: 0 auto; overflow: hidden; }
 .slice { position: absolute; pointer-events: none; }
 .abs-input { position: absolute; z-index: 12; background: transparent; border: none; padding: 6px 10px; font-size: 14px; color: #111; }
+.abs-rect { position: absolute; z-index: 8; background: #fff; border-radius: 12px; border: 1px solid #e5e7eb; opacity: 0.92; }
 .btn { position: absolute; z-index: 10; }
 .agree-box { position: absolute; z-index: 11; border: 1px solid #aaa; border-radius: 4px; }
 .agree-inner { width: 100%; height: 100%; background: transparent; }

@@ -1,4 +1,5 @@
 const { request, BASE_URL } = require('../../../utils/request.js')
+const api = require('../../../utils/api.js')
 Page({
   data: {
     // 头像相关
@@ -137,14 +138,28 @@ Page({
         data: {
           nameEn,
           gender,
-          age: ageNum,
+          age: Number(age || 0),
           nation,
           avatar: avatarRemote
         }
       })
 
+      // 若填写了邀请码，则尝试绑定推荐关系
+      const code = String(this.data.inviteCode || '').trim()
+      let bindTip = ''
+      if (code) {
+        try {
+          const bindRes = await api.bindReferral({ memberId: resp.id, invitationCode: code, channel: 'manual' })
+          if (bindRes?.status === 'bound') bindTip = '，邀请码绑定成功'
+          else if (bindRes?.status === 'already_bound') bindTip = '，邀请码已绑定'
+          else bindTip = ''
+        } catch (err) {
+          bindTip = '，邀请码绑定失败'
+        }
+      }
+
       wx.hideLoading()
-      wx.showToast({ title: '注册成功', icon: 'success', duration: 600 })
+      wx.showToast({ title: '注册成功' + bindTip, icon: 'success', duration: 800 })
       setTimeout(() => {
         const stack = getCurrentPages()
         if (stack.length > 1) {
@@ -157,7 +172,7 @@ Page({
         } else {
           wx.redirectTo({ url: '/pages/login/login' })
         }
-      }, 600)
+      }, 800)
     } catch (e) {
       wx.hideLoading()
       wx.showToast({ title: e?.message || '提交失败', icon: 'none' })

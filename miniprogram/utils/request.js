@@ -1,5 +1,13 @@
 // 统一封装请求，自动附带 token，并在 401 时清理并跳转登录
-const BASE_URL = 'https://www.goupclub.com/api'
+const BASE_URL = (() => {
+  try {
+    const env = wx.getAccountInfoSync?.().miniProgram?.envVersion || 'develop'
+    // 开发环境走本地后端；体验/正式版走线上域名
+    return env === 'develop' ? 'http://localhost:3000/api' : 'https://www.goupclub.com/api'
+  } catch (e) {
+    return 'http://localhost:3000/api'
+  }
+})()
 
 function request({ url, method = 'GET', data = {}, header = {} }) {
   return new Promise((resolve, reject) => {

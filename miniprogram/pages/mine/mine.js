@@ -8,6 +8,7 @@ Page({
     navIconVoucher: '',
     navIconPassword: '',
     navArrow: '',
+    navIconLogout: '',
     loggedIn: false,
     nickname: '',
     avatarUrl: '',
@@ -25,7 +26,8 @@ Page({
       navIconRefund: icons ? icons.getIcon('refund') : '',
       navIconVoucher: icons ? icons.getIcon('voucher') : '',
       navIconPassword: icons ? icons.getIcon('password') : '',
-      navArrow: icons ? icons.getIcon('arrowRight') : ''
+      navArrow: icons ? icons.getIcon('arrowRight') : '',
+      navIconLogout: icons ? icons.getIcon('logout') : ''
     })
 
     const token = wx.getStorageSync('token');
@@ -89,6 +91,7 @@ Page({
     wx.removeStorageSync('user')
     this.setData({ loggedIn: false, nickname: '', avatarUrl: '', englishName: '', account: '', inviteCode: '' })
     wx.showToast({ title: '已退出登录', icon: 'none' })
+    wx.navigateTo({ url: '/pages/login/login' })
   },
   // 复制邀请码
   onCopyInvite() {

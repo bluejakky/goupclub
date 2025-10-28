@@ -1,4 +1,4 @@
-const api = require('../../utils/api.js')
+const api = require('../../../utils/api.js')
 
 function ensureLogin() {
   const token = wx.getStorageSync('token')

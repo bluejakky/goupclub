@@ -33,7 +33,8 @@ const localIcons = {
   status: resolve('status.png'),
   refund: resolve('refund.png'),
   password: resolve('password.png'),
-  arrowRight: resolve('arrow-right.png')
+  arrowRight: resolve('arrow-right.png'),
+  logout: resolve('logout.png')
 }
 
 function getIcon(key) {

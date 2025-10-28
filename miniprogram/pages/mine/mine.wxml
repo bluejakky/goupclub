@@ -43,9 +43,9 @@
       <text class="nav-text">取消与退款记录</text>
       <image class="nav-arrow" src="{{navArrow}}" mode="aspectFit"/>
     </navigator>
-    <navigator class="nav-item" url="/pages/mine/voucher/voucher">
+    <navigator class="nav-item" url="/pages/mine/points/points">
       <image class="nav-icon" src="{{navIconVoucher}}" mode="aspectFit"/>
-      <text class="nav-text">积分支付</text>
+      <text class="nav-text">积分账户</text>
       <image class="nav-arrow" src="{{navArrow}}" mode="aspectFit"/>
     </navigator>
     <navigator class="nav-item" url="/pages/mine/password/password">
@@ -53,6 +53,11 @@
       <text class="nav-text">密码修改</text>
       <image class="nav-arrow" src="{{navArrow}}" mode="aspectFit"/>
     </navigator>
+    <view class="nav-item" bindtap="onLogout">
+      <image class="nav-icon" src="{{navIconLogout}}" mode="aspectFit"/>
+      <text class="nav-text">退出登录</text>
+      <image class="nav-arrow" src="{{navArrow}}" mode="aspectFit"/>
+    </view>
   </view>
   <view wx:else class="auth-tip">请先登录以查看个人中心</view>
 </view>
