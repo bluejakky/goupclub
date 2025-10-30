@@ -41,7 +41,7 @@
       <image class="radio-icon" src="{{radioIconUnchosen}}" mode="aspectFit" wx:else binderror="onRadioIconError" data-kind="unchosen"/>
     </view>
 
-    <view class="pay-item alipay {{paymentMethod==='alipay'?'active':''}}" data-method="alipay" bindtap="onSelectMethod">
+    <view wx:if="{{enableAlipay}}" class="pay-item alipay {{paymentMethod==='alipay'?'active':''}}" data-method="alipay" bindtap="onSelectMethod">
       <view class="icon"><image mode="aspectFit" style="width:40rpx;height:40rpx;" src="{{iconAlipay}}"/></view>
       <view class="name">支付宝支付</view>
       <view class="desc">需现金支付：¥{{cashPayable}}</view>

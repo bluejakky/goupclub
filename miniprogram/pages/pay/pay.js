@@ -20,6 +20,7 @@ Page({
     openid: null,
     // 新增：用于 picker 的展示文案
     pointsLabels: [],
+    enableAlipay: false,
     paymentMethod: 'wechat',
     radioIconChosen: '/assets/chosen.png',
     radioIconUnchosen: '/assets/unchosen.png',
@@ -191,20 +192,29 @@ Page({
   onSelectMethod(e) {
     const method = e.currentTarget.dataset.method;
     if (!method) return;
+    if (method === 'alipay' && !this.data.enableAlipay) {
+      wx.showToast({ title: '审核版仅支持微信支付', icon: 'none' });
+      return;
+    }
     this.setData({ paymentMethod: method });
   },
 
   // 新增：确认支付
   onConfirmPay() {
-    const { cashPayable, paymentMethod } = this.data;
+    const { cashPayable } = this.data;
     if (cashPayable <= 0) {
       this.payPointsOnly();
       return;
     }
-    if (paymentMethod === 'alipay') {
-      this.payAlipay();
-    } else {
+    const method = this.data.paymentMethod;
+    if (method === 'alipay' && !this.data.enableAlipay) {
+      wx.showToast({ title: '审核版仅支持微信支付', icon: 'none' });
+      this.setData({ paymentMethod: 'wechat' });
+    }
+    if (this.data.paymentMethod === 'wechat') {
       this.payWechat();
+    } else if (this.data.paymentMethod === 'alipay') {
+      this.payAlipay();
     }
   },
 

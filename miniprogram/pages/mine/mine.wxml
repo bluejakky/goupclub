@@ -33,6 +33,7 @@
       <text class="nav-text">个人信息编辑</text>
       <image class="nav-arrow" src="{{navArrow}}" mode="aspectFit"/>
     </navigator>
+
     <navigator class="nav-item" url="/pages/mine/status/status">
       <image class="nav-icon" src="{{navIconStatus}}" mode="aspectFit"/>
       <text class="nav-text">活动报名状态查询</text>
