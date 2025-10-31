@@ -25,14 +25,14 @@ Page({
   async initMember() {
     try {
       const cached = wx.getStorageSync('user') || null
-      let mid = Number(cached?.memberId ?? cached?.id ?? 0)
+      let mid = Number(cached?.memberId || 0)
       if (!Number.isFinite(mid) || mid <= 0) {
         // 兜底拉取用户信息（避免登录后异步写入 user 导致缺失）
         try {
           const me = await api.getMe()
           if (me) {
             wx.setStorageSync('user', me)
-            mid = Number(me?.memberId ?? me?.id ?? 0)
+            mid = Number(me?.memberId || 0)
           }
         } catch (_) {}
       }

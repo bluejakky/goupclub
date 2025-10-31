@@ -17,15 +17,15 @@
     <div id="app">
       <header class="topbar">
         <div class="brand">GoUp 管理后台</div>
-        <nav class="nav">
-          <button :class="{active: tab==='activity'}" @click="tab='activity'">活动管理</button>
-          <button :class="{active: tab==='member'}" @click="tab='member'">会员管理</button>
-          <button :class="{active: tab==='stats'}" @click="tab='stats'">数据统计</button>
-          <button :class="{active: tab==='voucher'}" @click="tab='voucher'">积分支付规则</button>
-          <a href="./errors.html" class="ghost">支付异常监控</a>
+        <nav class="nav" v-if="adminToken">
+          <button :class="{active: tab==='activity'}" @click="adminToken && (tab='activity')" :disabled="!adminToken">活动管理</button>
+          <button :class="{active: tab==='member'}" @click="adminToken && (tab='member')" :disabled="!adminToken">会员管理</button>
+          <button :class="{active: tab==='stats'}" @click="adminToken && (tab='stats')" :disabled="!adminToken">数据统计</button>
+          <button :class="{active: tab==='voucher'}" @click="adminToken && (tab='voucher')" :disabled="!adminToken">积分支付规则</button>
+          <a href="./errors.html" class="ghost" v-if="adminToken">支付异常监控</a>
         </nav>
         <div class="progress-note" style="display:flex;align-items:center;gap:12px;">
-          <span>小程序详情/支付页骨架已创建</span>
+      
           <label style="display:flex;align-items:center;gap:6px;font-weight:500;color:#374151;">
             <input type="checkbox" v-model="useApiVal" /> 使用后端API
           </label>
@@ -49,7 +49,11 @@
         <button v-if="adminToken" @click="logoutAdmin" style="color:#ef4444;">退出</button>
       </section>
           <!-- 支付异常监控入口统一移至导航链接 -->
-      <main class="content">
+      <section v-if="!adminToken" class="card" style="margin:12px; padding:12px;">
+        <div style="font-weight:600;">请先登录管理员账号</div>
+        <div style="color:var(--muted);font-size:12px;margin-top:4px;">登录后即可访问后台页面与数据。</div>
+      </section>
+      <main class="content" v-if="adminToken">
         <section v-if="tab==='activity'" class="card">
           <h2>活动管理</h2>
           <p>在此维护分类、创建与编辑活动、管理活动状态。</p>
@@ -221,6 +225,7 @@
                 <td>{{ m.disabled ? '已禁用' : '正常' }}</td>
                 <td>
                   <button @click="openMemberDetail(m)">详情</button>
+                  <button class="ghost" style="margin-left:4px" @click="selectMember(m)">积分管理</button>
                   <button class="ghost" style="margin-left:4px" @click="toggleDisableMember(m)">{{ m.disabled ? '解除禁用' : '禁用账号' }}</button>
                 </td>
               </tr>
@@ -235,6 +240,79 @@
             <button style="margin-left:4px" @click="exportData">导出JSON</button>
             <button style="margin-left:4px" @click="triggerImport">导入JSON</button>
             <input type="file" accept="application/json" ref="importFileInput" @change="handleImportFile" style="display:none" />
+          </div>
+
+          <div class="card" style="margin-top:16px; padding:12px;">
+            <h3>检索与积分管理</h3>
+            <div class="actions" style="display:flex;align-items:center;gap:8px;">
+              <input v-model="memberSearchQ" placeholder="输入ID/英文名/国籍/分组等关键词" style="width:260px" />
+              <button @click="searchMembers">检索</button>
+              <span style="color:var(--muted);font-size:12px;">点击表格中的“积分管理”选择会员</span>
+            </div>
+            <div v-if="selectedMember" style="margin-top:12px;display:grid;grid-template-columns: 1fr 1fr;gap:12px;">
+              <div class="card" style="padding:12px;">
+                <div style="font-weight:600;margin-bottom:6px;">已选会员</div>
+                <div style="font-size:14px;color:#374151;">ID {{ selectedMember.id }} · {{ selectedMember.nameEn }}</div>
+                <div style="font-size:12px;color:#6b7280;margin-top:4px;">
+                  分组：{{ selectedMember.group }} · 参与：{{ selectedMember.totalParticipations }} · 状态：{{ selectedMember.disabled ? '已禁用' : '正常' }}
+                </div>
+              </div>
+              <div class="card" style="padding:12px;">
+                <div style="display:flex;align-items:center;justify-content:space-between;">
+                  <div style="font-weight:600;">积分账户</div>
+                  <button class="ghost" @click="fetchPointsAccount">刷新账户</button>
+                </div>
+                <div v-if="pointsAccount">
+                  <div style="margin-top:6px;">当前余额：{{ Number(pointsAccount.balance || 0) }}</div>
+                  <div style="color:var(--muted);font-size:12px;margin-top:4px;">账户ID：{{ pointsAccount.id }}</div>
+                </div>
+                <div v-else style="color:var(--muted);font-size:12px;margin-top:6px;">尚未加载账户信息</div>
+              </div>
+              <div class="card" style="padding:12px; grid-column: span 2;">
+                <div style="display:flex;align-items:center;justify-content:space-between;">
+                  <div style="font-weight:600;">积分交易记录</div>
+                  <div>
+                    <button class="ghost" @click="fetchTransactions">刷新列表</button>
+                  </div>
+                </div>
+                <table class="table" style="margin-top:8px;">
+                  <thead><tr><th>时间</th><th>类型</th><th>方向</th><th>数量</th><th>备注</th></tr></thead>
+                  <tbody>
+                    <tr v-if="pointsTxn.length===0" class="empty-row"><td colspan="5">暂无交易记录</td></tr>
+                    <tr v-for="t in pointsTxn" :key="t.id">
+                      <td>{{ t.createdAt }}</td>
+                      <td>{{ t.type }}</td>
+                      <td>{{ t.direction }}</td>
+                      <td>{{ t.amount }}</td>
+                      <td>{{ t.note }}</td>
+                    </tr>
+                  </tbody>
+                </table>
+                <div class="actions" style="display:flex;align-items:center;gap:8px;">
+                  <button class="ghost" @click="setTxnPage(txnPage-1)" :disabled="txnPage<=1">上一页</button>
+                  <span style="color:var(--muted)">第 {{ txnPage }} 页</span>
+                  <button class="ghost" @click="setTxnPage(txnPage+1)" :disabled="txnPage*txnPageSize>=txnTotal">下一页</button>
+                  <span style="color:var(--muted)">共 {{ txnTotal }} 条</span>
+                </div>
+              </div>
+              <div class="card" style="padding:12px; grid-column: span 2;">
+                <div style="font-weight:600;">积分变更</div>
+                <div class="form-grid" style="grid-template-columns: repeat(4, 1fr);">
+                  <label>数量<input type="number" min="1" v-model.number="adjustAmount" /></label>
+                  <label>方向
+                    <select v-model="adjustDirection">
+                      <option value="credit">增加</option>
+                      <option value="debit">减少</option>
+                    </select>
+                  </label>
+                  <label>类型<input v-model="adjustType" placeholder="例如：manual_adjust" /></label>
+                  <label>备注<input v-model="adjustNote" placeholder="原因（可选）" /></label>
+                </div>
+                <div class="actions">
+                  <button @click="doAdjustPoints" :disabled="!selectedMember">提交变更</button>
+                </div>
+              </div>
+            </div>
           </div>
 
           <div v-if="showMemberModal" class="modal-backdrop">
@@ -387,7 +465,7 @@
         </section>
       </main>
 
-      <footer class="footer">根据《需求文档》搭建的初版后台骨架</footer>
+      <footer class="footer">GoupClub管理后台</footer>
 
       <div v-if="notice" class="toast">{{ notice }}</div>
 

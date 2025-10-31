@@ -234,6 +234,89 @@ app.get('/api/points/account', async (req, res) => {
   }
 });
 
+// 管理员端：手动发放积分（仅信用入账）
+app.post('/api/points/grant', authMiddleware, async (req, res) => {
+  const { memberId, amount, type, note } = req.body || {};
+  const mid = Number(memberId || 0);
+  const pts = Math.floor(Number(amount || 0));
+  if (!Number.isFinite(mid) || mid <= 0) return res.status(400).json({ error: 'invalid memberId' });
+  if (!Number.isFinite(pts) || pts <= 0) return res.status(400).json({ error: 'invalid amount' });
+  const t = String(type || 'manual');
+  try {
+    await recordPointsTransaction(mid, {
+      type: t,
+      direction: 'credit',
+      amount: pts,
+      origin: 'admin',
+      activityId: null,
+      orderId: null,
+      meta: { by: (req.admin?.username || req.admin?.id || null), note: note || null, grantedAt: new Date().toISOString() }
+    });
+    const accRows = await query('SELECT memberId, balance, locked, updatedAt FROM member_points_accounts WHERE memberId = ?', [mid]);
+    const acc = accRows[0] || { memberId: mid, balance: 0, locked: 0, updatedAt: null };
+    return res.json({ ok: true, memberId: mid, balance: Number(acc.balance || 0), locked: Number(acc.locked || 0), updatedAt: acc.updatedAt || null });
+  } catch (e) {
+    return res.status(500).json({ error: e.message });
+  }
+});
+
+// 管理员端：积分调整（支持增减）
+app.post('/api/points/adjust', authMiddleware, async (req, res) => {
+  const { memberId, amount, direction, type, note } = req.body || {};
+  const mid = Number(memberId || 0);
+  const pts = Math.floor(Number(amount || 0));
+  const dir = String(direction || '').toLowerCase();
+  if (!Number.isFinite(mid) || mid <= 0) return res.status(400).json({ error: 'invalid memberId' });
+  if (!Number.isFinite(pts) || pts <= 0) return res.status(400).json({ error: 'invalid amount' });
+  if (!['credit','debit'].includes(dir)) return res.status(400).json({ error: 'invalid direction' });
+  const t = String(type || 'manual_adjust');
+  try {
+    await recordPointsTransaction(mid, { type: t, direction: dir, amount: pts, origin: 'admin', activityId: null, orderId: null, meta: { by: (req.admin?.username || req.admin?.id || null), note: note || null, adjustedAt: new Date().toISOString() } });
+    const accRows = await query('SELECT memberId, balance, locked, updatedAt FROM member_points_accounts WHERE memberId = ?', [mid]);
+    const acc = accRows[0] || { memberId: mid, balance: 0, locked: 0, updatedAt: null };
+    return res.json({ ok: true, memberId: mid, balance: Number(acc.balance || 0), locked: Number(acc.locked || 0), updatedAt: acc.updatedAt || null });
+  } catch (e) { return res.status(500).json({ error: e.message }); }
+});
+
+// 管理员端：积分交易查询
+app.get('/api/points/transactions', authMiddleware, async (req, res) => {
+  const { memberId, type, direction, start, end } = req.query || {};
+  const page = Math.max(Number(req.query.page || 1), 1);
+  const pageSize = Math.min(Math.max(Number(req.query.pageSize || 20), 1), 200);
+  const offset = (page - 1) * pageSize;
+  try {
+    let base = 'FROM points_transactions WHERE 1=1';
+    const params = [];
+    if (Number.isFinite(Number(memberId)) && Number(memberId) > 0) { base += ' AND memberId = ?'; params.push(Number(memberId)); }
+    if (type) { base += ' AND type = ?'; params.push(String(type)); }
+    if (direction) { base += ' AND direction = ?'; params.push(String(direction)); }
+    if (start) { base += ' AND createdAt >= ?'; params.push(start); }
+    if (end) { base += ' AND createdAt <= ?'; params.push(end); }
+    const [countRow] = await query(`SELECT COUNT(*) AS total ${base}`, params);
+    const rows = await query(`SELECT id, memberId, type, direction, amount, origin, activityId, orderId, meta, createdAt ${base} ORDER BY createdAt DESC, id DESC LIMIT ? OFFSET ?`, [...params, pageSize, offset]);
+    res.json({ total: Number(countRow?.total || 0), items: rows, page, pageSize });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// 管理员端：会员检索
+app.get('/api/members/search', authMiddleware, async (req, res) => {
+  const q = String(req.query.q || '').trim();
+  const page = Math.max(Number(req.query.page || 1), 1);
+  const pageSize = Math.min(Math.max(Number(req.query.pageSize || 20), 1), 200);
+  const offset = (page - 1) * pageSize;
+  try {
+    let base = 'FROM members WHERE 1=1';
+    const params = [];
+    if (q) {
+      base += ' AND (nameEn LIKE ? OR CAST(id AS CHAR) LIKE ? OR CAST(memberGroup AS CHAR) LIKE ? OR nation LIKE ?)';
+      params.push(`%${q}%`, `%${q}%`, `%${q}%`, `%${q}%`);
+    }
+    const [countRow] = await query(`SELECT COUNT(*) AS total ${base}`, params);
+    const rows = await query(`SELECT id, nameEn, gender, age, nation, avatar, flag, DATE_FORMAT(registeredAt, "%Y-%m-%d") AS registeredAt, memberGroup AS \`group\`, totalParticipations, disabled ${base} ORDER BY id DESC LIMIT ? OFFSET ?`, [...params, pageSize, offset]);
+    res.json({ total: Number(countRow?.total || 0), items: rows, page, pageSize });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 app.post('/api/admin/login', async (req, res) => {
   const { username, password } = req.body || {};
   if (!username || !password) return res.status(400).json({ error: 'username/password required' });
@@ -260,13 +343,74 @@ app.post('/api/admin/login', async (req, res) => {
     return res.status(500).json({ error: e.message });
   }
 });
+
+// 新增：管理员注册接口（用于小程序注册创建登录账户）
+app.post('/api/admin/register', async (req, res) => {
+  const { username, password } = req.body || {};
+  if (!username || !password) return res.status(400).json({ error: 'username/password required' });
+  if (String(username).length < 3) return res.status(400).json({ error: 'username too short' });
+  const pwdOk = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,20}$/.test(String(password || ''));
+  if (!pwdOk) return res.status(400).json({ error: 'password weak' });
+  try {
+    const exist = await query('SELECT id FROM admin_users WHERE username = ?', [username]);
+    if (exist[0]) return res.status(409).json({ error: 'username exists' });
+    const hash = crypto.createHash('sha256').update(password).digest('hex');
+    const result = await query('INSERT INTO admin_users (username, passwordHash, disabled) VALUES (?,?,0)', [username, hash]);
+    return res.json({ ok: true, id: result.insertId });
+  } catch (e) {
+    return res.status(500).json({ error: e.message });
+  }
+});
+
+// 新增：链接管理员账号与会员ID（注册后调用）
+app.post('/api/admin/link-member', async (req, res) => {
+  const { username, memberId } = req.body || {};
+  const mid = Number(memberId || 0);
+  if (!username || !Number.isFinite(mid) || mid <= 0) return res.status(400).json({ error: 'username/memberId required' });
+  try {
+    await query(`CREATE TABLE IF NOT EXISTS admin_member_links (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      adminId INT NOT NULL,
+      memberId INT NOT NULL,
+      UNIQUE KEY uniq_admin (adminId),
+      UNIQUE KEY uniq_member (memberId)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;`);
+    const rows = await query('SELECT id FROM admin_users WHERE username = ? LIMIT 1', [username]);
+    const admin = rows && rows[0];
+    if (!admin) return res.status(404).json({ error: 'admin not found' });
+    const mrows = await query('SELECT id FROM members WHERE id = ? LIMIT 1', [mid]);
+    if (!mrows[0]) return res.status(404).json({ error: 'member not found' });
+    const conflictRows = await query('SELECT id FROM admin_member_links WHERE memberId = ? AND adminId <> ? LIMIT 1', [mid, admin.id]);
+    if (conflictRows && conflictRows[0]) return res.status(409).json({ error: 'member linked elsewhere' });
+    await query('INSERT INTO admin_member_links (adminId, memberId) VALUES (?, ?) ON DUPLICATE KEY UPDATE memberId = VALUES(memberId)', [admin.id, mid]);
+    return res.json({ ok: true, adminId: admin.id, memberId: mid });
+  } catch (e) {
+    return res.status(500).json({ error: e.message });
+  }
+});
+
 // 获取当前管理员用户信息（昵称与头像）
 app.get('/api/admin/me', authMiddleware, async (req, res) => {
   try {
     const { id, username } = req.admin || {};
     // 简单头像生成（可后续改为数据库字段）
     const avatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(username || 'User')}&background=0ea5e9&color=fff`;
-    res.json({ id, username, nickname: username, avatar });
+    // 确保映射表存在并查询绑定的会员ID
+    try {
+      await query(`CREATE TABLE IF NOT EXISTS admin_member_links (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        adminId INT NOT NULL,
+        memberId INT NOT NULL,
+        UNIQUE KEY uniq_admin (adminId),
+        UNIQUE KEY uniq_member (memberId)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;`);
+    } catch {}
+    let memberId = null;
+    try {
+      const rows = await query('SELECT memberId FROM admin_member_links WHERE adminId = ? LIMIT 1', [id]);
+      memberId = rows && rows[0] ? Number(rows[0].memberId || 0) : null;
+    } catch {}
+    res.json({ id, username, nickname: username, avatar, memberId });
   } catch (e) {
     res.status(500).json({ error: e.message });
   }

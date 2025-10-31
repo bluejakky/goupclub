@@ -91,11 +91,11 @@ Page({
     const end = encodeURIComponent(detail.end || '');
     const place = encodeURIComponent(detail.place || '');
     const image = encodeURIComponent((detail.images && detail.images[0]) || '');
-    // 从本地用户信息提取 memberId（优先使用 memberId，其次 id）
+    // 从本地用户信息提取 memberId（仅使用 memberId）
     let memberIdParam = '';
     try {
       const user = wx.getStorageSync('user');
-      const mid = Number(user?.memberId ?? user?.id ?? NaN);
+      const mid = Number(user?.memberId || NaN);
       if (Number.isFinite(mid) && mid > 0) memberIdParam = `&memberId=${mid}`;
     } catch (_) {}
     wx.navigateTo({ url: `/pages/pay/pay?id=${id || ''}&price=${price}&title=${title}&start=${start}&end=${end}&place=${place}&image=${image}${memberIdParam}` });

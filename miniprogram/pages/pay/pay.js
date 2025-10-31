@@ -40,7 +40,7 @@ Page({
     const id = query?.id || null;
     const fromQueryMemberId = Number(query?.memberId || NaN);
     const user = wx.getStorageSync('user') || null;
-    const storedMemberId = user && (Number(user.memberId || NaN) || Number(user.id || NaN));
+    const storedMemberId = user ? Number(user.memberId || NaN) : NaN;
     const memberId = Number.isFinite(fromQueryMemberId) ? fromQueryMemberId : (Number.isFinite(storedMemberId) ? storedMemberId : null);
 
     const icons = getApp().globalData?.icons || null;
@@ -259,8 +259,8 @@ Page({
     if (!memberId) {
       try {
         const me = await api.getMe()
-        if (me && me.id) {
-          memberId = me.id
+        if (me && me.memberId) {
+          memberId = me.memberId
           this.setData({ memberId })
         }
       } catch {}
@@ -318,8 +318,8 @@ Page({
     if (!memberId) {
       try {
         const me = await api.getMe()
-        if (me && me.id) {
-          memberId = me.id
+        if (me && me.memberId) {
+          memberId = me.memberId
           this.setData({ memberId })
         }
       } catch {}
@@ -370,8 +370,8 @@ Page({
     if (!memberId) {
       try {
         const me = await api.getMe()
-        if (me && me.id) {
-          memberId = me.id
+        if (me && me.memberId) {
+          memberId = me.memberId
           this.setData({ memberId })
         }
       } catch {}

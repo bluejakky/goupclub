@@ -25,7 +25,7 @@ Page({
   onShow() { ensureLogin() },
   async init() {
     const me = wx.getStorageSync('user') || {}
-    const memberId = Number(me.id || 0)
+    const memberId = Number(me.memberId || 0)
     if (!Number.isFinite(memberId) || memberId <= 0) {
       wx.showToast({ title: '用户信息缺失', icon: 'none' })
       return

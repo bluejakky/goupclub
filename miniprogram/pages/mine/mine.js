@@ -45,7 +45,7 @@ Page({
           account: cached.username || '',
           englishName: cached.nickname || cached.username || ''
         })
-        const memberId = Number(cached.id || 0)
+        const memberId = Number(cached.memberId || 0)
         if (Number.isFinite(memberId) && memberId > 0) {
           api.getMember(memberId).then(m => {
             if (m && m.nameEn) this.setData({ englishName: m.nameEn })
@@ -69,7 +69,7 @@ Page({
             account: me.username || '',
             englishName: me.nickname || me.username || ''
           })
-          const memberId = Number(me.id || 0)
+          const memberId = Number(me.memberId || 0)
           if (Number.isFinite(memberId) && memberId > 0) {
             api.getMember(memberId).then(m => {
               if (m && m.nameEn) this.setData({ englishName: m.nameEn })

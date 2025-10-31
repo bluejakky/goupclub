@@ -834,6 +834,76 @@ createApp({
       }
     };
 
+    // 成员检索与积分管理
+    const memberSearchQ = ref('');
+    const selectedMember = ref(null);
+    const pointsAccount = ref(null);
+    const pointsTxn = ref([]);
+    const txnPage = ref(1);
+    const txnPageSize = ref(10);
+    const txnTotal = ref(0);
+    const adjustAmount = ref(0);
+    const adjustDirection = ref('credit');
+    const adjustType = ref('manual');
+    const adjustNote = ref('');
+
+    const searchMembers = async () => {
+      if (!api.searchMembers) { toast('未启用后端API'); return; }
+      if (!adminToken.value) { toast('请先登录'); return; }
+      try {
+        const res = await api.searchMembers(memberSearchQ.value || '', 1, 50);
+        const items = res?.items || [];
+        members.splice(0, members.length, ...items);
+        toast(`已检索到 ${items.length} 位成员`);
+      } catch(e) { console.error(e); toast('检索失败'); }
+    };
+
+    const selectMember = (m) => {
+      selectedMember.value = m;
+      txnPage.value = 1;
+      fetchPointsAccount();
+      fetchTransactions();
+    };
+
+    const fetchPointsAccount = async () => {
+      if (!selectedMember.value) return;
+      if (!api.getPointsAccount) { toast('未启用后端API'); return; }
+      try {
+        const acc = await api.getPointsAccount(selectedMember.value.id);
+        pointsAccount.value = acc || null;
+      } catch(e) { console.error(e); toast('获取积分账户失败'); }
+    };
+
+    const fetchTransactions = async () => {
+      if (!selectedMember.value) return;
+      if (!api.listPointsTransactions) { toast('未启用后端API'); return; }
+      try {
+        const res = await api.listPointsTransactions(selectedMember.value.id, txnPage.value, txnPageSize.value);
+        pointsTxn.value = Array.isArray(res?.items) ? res.items : [];
+        txnTotal.value = Number(res?.total || 0);
+      } catch(e){ console.error(e); toast('获取交易失败'); }
+    };
+
+    const setTxnPage = async (p) => {
+      const maxPage = Math.max(1, Math.ceil(Number(txnTotal.value || 0) / Number(txnPageSize.value || 10)));
+      txnPage.value = Math.min(Math.max(1, p), maxPage);
+      await fetchTransactions();
+    };
+
+    const doAdjustPoints = async () => {
+      if (!selectedMember.value) return toast('请先选择会员');
+      const amt = Math.floor(Number(adjustAmount.value || 0));
+      if (!Number.isFinite(amt) || amt <= 0) return toast('请输入有效积分数量');
+      if (!api.adjustPoints) return toast('未启用后端API');
+      try {
+        const payload = { memberId: selectedMember.value.id, amount: amt, direction: String(adjustDirection.value || 'credit'), type: adjustType.value || 'manual', note: adjustNote.value || '' };
+        const res = await api.adjustPoints(payload);
+        await fetchPointsAccount();
+        await fetchTransactions();
+        toast('积分已变更');
+      } catch(e){ console.error(e); toast('积分变更失败'); }
+    };
+
     // 导入/导出 JSON
     const importFileInput = ref(null);
     const triggerImport = () => {
@@ -953,7 +1023,7 @@ createApp({
       }
     };
     // 当启用后端API时，切换到后端基地址（默认 http://localhost:3000）
-    const API_BASE = 'https://www.goupclub.com';
+    const API_BASE = (location.hostname === 'localhost' || location.hostname === '127.0.0.1') ? 'http://127.0.0.1:3000' : 'https://www.goupclub.com';
     const fetchWithBase = async (path, options = {}) => {
       const headers = { ...(options.headers || {}) };
       // 自动附带 JSON 头（在有 body 时）
@@ -1447,6 +1517,31 @@ createApp({
             totalParticipations: m.totalParticipations != null ? Number(m.totalParticipations) : 0,
           })) : [];
         };
+        api.searchMembers = async (q = '', page = 1, pageSize = 20) => {
+          const res = await fetchWithBase(`/api/members/search?q=${encodeURIComponent(q)}&page=${page}&pageSize=${pageSize}`);
+          if (!res.ok) throw new Error('检索会员失败');
+          return res.json();
+        };
+        api.getPointsAccount = async (memberId) => {
+          const res = await fetchWithBase(`/api/points/account?memberId=${encodeURIComponent(memberId)}`);
+          if (!res.ok) throw new Error('获取积分账户失败');
+          return res.json();
+        };
+        api.listPointsTransactions = async (memberId, page = 1, pageSize = 20) => {
+          const res = await fetchWithBase(`/api/points/transactions?memberId=${encodeURIComponent(memberId)}&page=${page}&pageSize=${pageSize}`);
+          if (!res.ok) throw new Error('获取积分交易失败');
+          return res.json();
+        };
+        api.grantPoints = async (payload) => {
+          const res = await fetchWithBase('/api/points/grant', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+          if (!res.ok) throw new Error('发放积分失败');
+          return res.json();
+        };
+        api.adjustPoints = async (payload) => {
+          const res = await fetchWithBase('/api/points/adjust', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+          if (!res.ok) throw new Error('积分调整失败');
+          return res.json();
+        };
         api.updateMemberGroup = async (id, group) => {
           const res = await fetchWithBase(`/api/members/${id}/group`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ group }) });
           if (!res.ok) throw new Error('更新会员分组失败');
@@ -1585,6 +1680,24 @@ createApp({
       closeMemberModal,
       updateMemberGroup,
       toggleDisableMember,
+      // 成员检索与积分管理
+      memberSearchQ,
+      searchMembers,
+      selectedMember,
+      selectMember,
+      pointsAccount,
+      fetchPointsAccount,
+      pointsTxn,
+      txnPage,
+      txnPageSize,
+      txnTotal,
+      setTxnPage,
+      adjustAmount,
+      adjustDirection,
+      adjustType,
+      adjustNote,
+      doAdjustPoints,
+      fetchTransactions,
       // 积分支付配置
       voucherConfig,
       fetchVoucherConfig,

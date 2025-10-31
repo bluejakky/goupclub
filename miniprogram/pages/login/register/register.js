@@ -109,6 +109,8 @@ Page({
     }
     try {
       wx.showLoading({ title: '提交中', mask: true })
+      // 新增：创建登录账户（用于 /api/admin/login 登录）
+      await request({ url: '/admin/register', method: 'POST', data: { username, password } })
       // 上传头像文件，获取URL
       let avatarRemote = ''
       const uploadRes = await new Promise((resolve, reject) => {
@@ -143,6 +145,13 @@ Page({
           avatar: avatarRemote
         }
       })
+
+      // 绑定登录账户与会员ID（用于后续读取 memberId）
+      try {
+        await request({ url: '/admin/link-member', method: 'POST', data: { username, memberId: resp.id } })
+      } catch (err) {
+        console.warn('link-member failed', err)
+      }
 
       // 若填写了邀请码，则尝试绑定推荐关系
       const code = String(this.data.inviteCode || '').trim()
