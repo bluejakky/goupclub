@@ -30,8 +30,9 @@ const localIcons = {
   alipay: resolve('alipay.png'),
   voucher: resolve('voucher.png'),
   profile: resolve('profile.png'),
-  status: resolve('status.png'),
-  refund: resolve('refund.png'),
+  status: resolve('calendar-check-line.svg'),
+  // 使用 Remix Icon 的线性样式，替换为 ticket-line.svg
+  refund: resolve('ticket-line.svg'),
   password: resolve('password.png'),
   arrowRight: resolve('arrow-right.png'),
   logout: resolve('logout.png')

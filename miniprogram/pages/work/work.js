@@ -1,5 +1,7 @@
 Page({
   data: {
+    statusBarHeight: 20,
+    navHeight: 64,
     keywords: '',
     selectedCategory: '',
     // 下拉选项
@@ -75,6 +77,10 @@ Page({
     ]
   },
   onLoad() {
+    const sys = wx.getSystemInfoSync()
+    const statusBarHeight = sys.statusBarHeight || 20
+    const navHeight = statusBarHeight + 44
+    this.setData({ statusBarHeight, navHeight })
     // 排序：置顶优先，其次按发布时间倒序，其次按开始时间
     const sorted = [...this.data.activities].sort((a, b) => {
       if ((a.isTop ? 1 : 0) !== (b.isTop ? 1 : 0)) return (b.isTop ? 1 : 0) - (a.isTop ? 1 : 0);
@@ -88,6 +94,7 @@ Page({
       flags: Array.isArray(a.flags) ? a.flags.filter((f, i, arr) => arr.indexOf(f) === i) : []
     }));
     this.setData({ activities: deduped, fullActivities: deduped });
+    wx.showShareMenu({ withShareTicket: true, menus: ['shareAppMessage','shareTimeline'] });
   },
   onShow() {
     try {
@@ -187,15 +194,22 @@ Page({
     wx.navigateTo({ url: '/pages/detail/detail?id=' + id });
   },
 
-  onReady() {
+  onShareAppMessage() {
+    return {
+      title: 'GoupClub 活动社区',
+      path: '/pages/work/work'
+    };
+  },
+  onShareTimeline() {
+    return {
+      title: 'GoupClub 活动社区',
+      query: ''
+    };
   },
 
-
-
-
-
-
-
-
-
+  onReady() {
+  },
+  onBack() {
+    wx.reLaunch({ url: '/pages/index/index' })
+  }
 });

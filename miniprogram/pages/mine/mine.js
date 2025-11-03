@@ -16,7 +16,9 @@ Page({
     englishName: '',
     account: '',
     inviteCode: '',
-    myPoints: 0
+    myPoints: 0,
+    statusBarHeight: 20,
+    navHeight: 64
   },
   onShow() {
     const icons = getApp().globalData?.icons || null;
@@ -48,7 +50,10 @@ Page({
         const memberId = Number(cached.memberId || 0)
         if (Number.isFinite(memberId) && memberId > 0) {
           api.getMember(memberId).then(m => {
-            if (m && m.nameEn) this.setData({ englishName: m.nameEn })
+            const update = {}
+            if (m && m.nameEn) update.englishName = m.nameEn
+            if (m && m.avatar) update.avatarUrl = m.avatar
+            if (Object.keys(update).length) this.setData(update)
           }).catch(() => {})
           api.getInvitationCode(memberId).then(r => {
             if (r && r.code) this.setData({ inviteCode: r.code })
@@ -72,7 +77,10 @@ Page({
           const memberId = Number(me.memberId || 0)
           if (Number.isFinite(memberId) && memberId > 0) {
             api.getMember(memberId).then(m => {
-              if (m && m.nameEn) this.setData({ englishName: m.nameEn })
+              const update = {}
+              if (m && m.nameEn) update.englishName = m.nameEn
+              if (m && m.avatar) update.avatarUrl = m.avatar
+              if (Object.keys(update).length) this.setData(update)
             }).catch(() => {})
             api.getInvitationCode(memberId).then(r => { if (r && r.code) this.setData({ inviteCode: r.code }) }).catch(() => {})
             api.getPointsAccount(memberId).then(acc => {
@@ -82,6 +90,12 @@ Page({
         }
       }).catch(() => {})
     }
+  },
+  onLoad() {
+    const sys = wx.getSystemInfoSync()
+    const statusBarHeight = sys.statusBarHeight || 20
+    const navHeight = statusBarHeight + 44
+    this.setData({ statusBarHeight, navHeight })
   },
   onLogin() {
     wx.navigateTo({ url: '/pages/login/login' })
@@ -104,5 +118,12 @@ Page({
       data: String(code),
       success: () => wx.showToast({ title: '已复制', icon: 'none' })
     })
+  },
+  // 返回到主页（tab页：来玩）
+  onGoHome() {
+    wx.switchTab({ url: '/pages/work/work' })
+  },
+  onBack() {
+    wx.reLaunch({ url: '/pages/index/index' })
   }
 })

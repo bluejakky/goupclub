@@ -788,13 +788,60 @@ createApp({
     ]);
     const memberGroups = reactive(['核心会员', '志愿者', '普通会员']);
     const showMemberModal = ref(false);
+    const memberDetailEditing = ref(false);
+    const savingMember = ref(false);
     const memberDetail = reactive({});
     const openMemberDetail = (m) => {
       Object.assign(memberDetail, JSON.parse(JSON.stringify(m)));
+      memberDetailEditing.value = false;
       showMemberModal.value = true;
     };
     const closeMemberModal = () => {
       showMemberModal.value = false;
+      memberDetailEditing.value = false;
+    };
+    const saveMemberProfile = async () => {
+      if (!memberDetail.id) return toast('无效的会员');
+      savingMember.value = true;
+      try {
+        const payload = {
+          // 保留未修改字段，避免后端用 null 覆盖
+          nameEn: String(memberDetail.nameEn || ''),
+          gender: String(memberDetail.gender || ''),
+          age: Number.isFinite(Number(memberDetail.age)) ? Number(memberDetail.age) : null,
+          nation: String(memberDetail.nation || ''),
+          flag: String(memberDetail.flag || ''),
+          registeredAt: String(memberDetail.registeredAt || ''),
+          group: String(memberDetail.group || ''),
+          totalParticipations: Number.isFinite(Number(memberDetail.totalParticipations)) ? Number(memberDetail.totalParticipations) : 0,
+          disabled: !!memberDetail.disabled,
+          avatar: String(memberDetail.avatar || ''),
+          // 资料编辑字段
+          language: String(memberDetail.language || ''),
+          occupation: String(memberDetail.occupation || ''),
+          city: String(memberDetail.city || ''),
+          favorite: String(memberDetail.favorite || ''),
+        };
+        if (api.useApi.value && api.updateMember) {
+          await api.updateMember(memberDetail.id, payload);
+          const idx = members.findIndex((x) => x.id === memberDetail.id);
+          if (idx >= 0) Object.assign(members[idx], payload);
+          toast('资料已保存');
+          memberDetailEditing.value = false;
+          refreshMembersFromApi();
+        } else {
+          const idx = members.findIndex((x) => x.id === memberDetail.id);
+          if (idx >= 0) Object.assign(members[idx], payload);
+          toast('资料已保存（本地）');
+          memberDetailEditing.value = false;
+          saveToLocal();
+        }
+      } catch (e) {
+        console.error(e);
+        toast('保存失败');
+      } finally {
+        savingMember.value = false;
+      }
     };
     const updateMemberGroup = (m, group) => {
       if (api.updateMemberGroup) {
@@ -1020,6 +1067,20 @@ createApp({
       } catch (e) {
         console.error(e);
         toast('加载后端活动列表失败（已重试）');
+      }
+    };
+    // 会员列表刷新（启用后端API时）
+    const refreshMembersFromApi = async () => {
+      if (!api.listMembers) return;
+      try {
+        const rows = await withRetry(() => api.listMembers());
+        if (Array.isArray(rows)) {
+          members.splice(0, members.length, ...rows);
+          toast('已从后端加载会员列表');
+        }
+      } catch (e) {
+        console.error(e);
+        toast('加载后端会员列表失败（已重试）');
       }
     };
     // 当启用后端API时，切换到后端基地址（默认 http://localhost:3000）
@@ -1552,6 +1613,11 @@ createApp({
           if (!res.ok) throw new Error('切换会员禁用状态失败');
           return res.json();
         };
+        api.updateMember = async (id, payload) => {
+          const res = await fetchWithBase(`/api/members/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+          if (!res.ok) throw new Error('更新会员资料失败');
+          return res.json();
+        };
         refreshActivitiesFromApi();
 
     // 支付异常监控
@@ -1610,6 +1676,9 @@ createApp({
       resetToDefault,
       showActivityModal,
       activityForm,
+      // 表单校验
+      formErrors,
+      isFormValid,
       openActivityForm,
       openEditActivity,
       saveActivity,
@@ -1676,8 +1745,11 @@ createApp({
       memberGroups,
       showMemberModal,
       memberDetail,
+      memberDetailEditing,
+      savingMember,
       openMemberDetail,
       closeMemberModal,
+      saveMemberProfile,
       updateMemberGroup,
       toggleDisableMember,
       // 成员检索与积分管理

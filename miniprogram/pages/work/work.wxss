@@ -42,3 +42,8 @@
 .detail-btn { background: #7c3aed; color: #fff; padding: 8rpx 16rpx; border-radius: 10rpx; font-size: 24rpx; }
 .detail-btn:active { opacity: 0.9; }
 /* 顶部装饰区域已移除星球相关样式 */
+.custom-nav { position: fixed; top: 0; left: 0; width: 100%; background: #fff; z-index: 1000; }
+.nav-content { height: 44px; display: flex; align-items: center; justify-content: center; position: relative; }
+.nav-back { position: absolute; left: 0; top: 0; height: 44px; width: 88rpx; display: flex; align-items: center; justify-content: center; background: transparent; }
+.nav-back text { color: #111827; font-size: 34rpx; font-weight: 600; line-height: 1; }
+.nav-title { font-size: 34rpx; font-weight: 600; color: #111827; }

@@ -69,42 +69,6 @@ Page({
     // 可替换为实际手机号登录流程
   },
 onBack() {
-  wx.showModal({
-    title: '提示',
-    content: '是否退出小程序？',
-    confirmText: '退出',
-    cancelText: '取消',
-    // 避免用户误触背景关闭，强制通过按钮操作
-    showCancel: true,
-    cancelColor: '#666', // 取消按钮颜色（可选，增强视觉区分）
-    confirmColor: '#e63946', // 确认按钮颜色（可选，突出重要操作）
-    success(res) {
-      if (res.confirm) {
-        // 确保 exitMiniProgram 方法存在（兼容旧版本基础库）
-        if (wx.exitMiniProgram) {
-          wx.exitMiniProgram({
-            success: () => {
-              console.log('退出小程序成功');
-            },
-            fail: (err) => {
-              console.error('退出小程序失败', err);
-              // 失败时可做降级处理，例如返回上一页
-              wx.navigateBack();
-            }
-          });
-        } else {
-          // 基础库版本过低不支持 exitMiniProgram 时的降级方案
-          wx.showToast({
-            title: '请手动关闭小程序',
-            icon: 'none',
-            duration: 2000
-          });
-        }
-      }
-    },
-    fail(err) {
-      console.error('弹窗调用失败', err);
-    }
-  });
+  wx.reLaunch({ url: '/pages/index/index' });
 },
 });

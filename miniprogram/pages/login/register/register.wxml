@@ -39,8 +39,18 @@
       <input class="input" type="number" placeholder="请输入年龄" placeholder-style="text-align:right;font-size:22rpx;" bindinput="onInput" data-field="age" value="{{age}}"/>
     </view>
     <view class="field">
-      <text class="label">国籍*</text>
-      <input class="input" placeholder="如：中国" placeholder-style="text-align:right;font-size:22rpx;" bindinput="onInput" data-field="nation" value="{{nation}}"/>
+      <text class="label">地区/国家*</text>
+      <view class="country-selector">
+        <picker mode="multiSelector" range="{{multiArray}}" value="{{multiIndex}}" bindchange="onRegionCountryChange" bindcolumnchange="onRegionCountryColumnChange">
+          <view class="picker-display {{nation ? '' : 'placeholder'}}">
+            {{ nation ? (regionName + ' / ' + nation) : '请选择地区/国家' }}
+          </view>
+        </picker>
+        <view class="search-trigger" bindtap="onOpenCountrySearch">
+          <image class="search-icon" src="../../assets/search.png" mode="aspectFit"></image>
+          <text class="search-text">搜索选择</text>
+        </view>
+      </view>
     </view>
 
     <view class="field">
@@ -76,6 +86,24 @@
           <checkbox value="user" checked="{{agreeUserAgreement}}"/> 向上GO-UP小程序用户使用协议及平台法律规则
         </label>
       </checkbox-group>
+    </view>
+  </view>
+  <view wx:if="{{searchCountryVisible}}" class="country-search-overlay">
+    <view class="overlay-card">
+      <view class="overlay-header">
+        <text class="overlay-title">选择国家</text>
+        <view class="overlay-close" bindtap="onCloseCountrySearch">取消</view>
+      </view>
+      <input class="search-input" placeholder="输入国家或地区关键字" value="{{searchQuery}}" bindinput="onSearchInput"/>
+      <scroll-view class="result-list" scroll-y="true">
+        <block wx:for="{{searchResults}}" wx:key="name">
+          <view class="result-item" bindtap="onPickCountryFromSearch" data-region="{{item.region}}" data-name="{{item.name}}" data-code="{{item.code}}">
+            <text class="result-flag">{{item.flag}}</text>
+            <text class="result-name">{{item.name}}</text>
+            <text class="result-region">{{item.region}}</text>
+          </view>
+        </block>
+      </scroll-view>
     </view>
   </view>
   <view class="bottom-space"></view>

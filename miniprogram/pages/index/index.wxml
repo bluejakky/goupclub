@@ -5,17 +5,81 @@
   </view>
   <view class="main">
     <view class="main-image-wrap">
-      <image class="main-image" src="../../assets/mainpage.PNG" mode="widthFix" />
+      <image class="main-image" src="../../assets/mainpage.PNG" mode="widthFix" bindload="onImageLoad" />
+
       <!-- 语言快捷热点：你好/hello/其他语言 -->
-      <view class="hotspot hs-nihao" bindtap="onLangTap" data-key="nihao"></view>
-      <view class="hotspot hs-hello" bindtap="onLangTap" data-key="hello"></view>
-      <view class="hotspot hs-other" bindtap="onLangTap" data-key="other"></view>
+      <view class="hotspot hs-nihao {{hotspotDebug ? 'debug' : ''}}"
+            bindtap="onLangTap" data-key="nihao"
+            data-id="nihao"
+            style="{{hotspotDebug ? ('left:'+hsPos.nihao.left+'%;top:'+hsPos.nihao.top+'%;width:'+hsPos.nihao.width+'%;height:'+hsPos.nihao.height+'%;') : ''}}"
+            bindtouchstart="onHsTouchStart" catchtouchmove="onHsTouchMove" bindtouchend="onHsTouchEnd">
+        <text wx:if="{{hotspotDebug}}" class="hotspot-label">你好→汉语</text>
+      </view>
+      <view class="hotspot hs-hello {{hotspotDebug ? 'debug' : ''}}"
+            bindtap="onLangTap" data-key="hello"
+            data-id="hello"
+            style="{{hotspotDebug ? ('left:'+hsPos.hello.left+'%;top:'+hsPos.hello.top+'%;width:'+hsPos.hello.width+'%;height:'+hsPos.hello.height+'%;') : ''}}"
+            bindtouchstart="onHsTouchStart" catchtouchmove="onHsTouchMove" bindtouchend="onHsTouchEnd">
+        <text wx:if="{{hotspotDebug}}" class="hotspot-label">HELLO→英语</text>
+      </view>
+      <view class="hotspot hs-other {{hotspotDebug ? 'debug' : ''}}"
+            bindtap="onLangTap" data-key="other"
+            data-id="other"
+            style="{{hotspotDebug ? ('left:'+hsPos.other.left+'%;top:'+hsPos.other.top+'%;width:'+hsPos.other.width+'%;height:'+hsPos.other.height+'%;') : ''}}"
+            bindtouchstart="onHsTouchStart" catchtouchmove="onHsTouchMove" bindtouchend="onHsTouchEnd">
+        <text wx:if="{{hotspotDebug}}" class="hotspot-label">其他→小语种</text>
+      </view>
+      <!-- 额外两个“小语种”热点（行为同 other） -->
+      <view class="hotspot hs-other1 {{hotspotDebug ? 'debug' : ''}}"
+            bindtap="onLangTap" data-key="other"
+            data-id="other1"
+            style="{{hotspotDebug ? ('left:'+hsPos.other1.left+'%;top:'+hsPos.other1.top+'%;width:'+hsPos.other1.width+'%;height:'+hsPos.other1.height+'%;') : ''}}"
+            bindtouchstart="onHsTouchStart" catchtouchmove="onHsTouchMove" bindtouchend="onHsTouchEnd">
+        <text wx:if="{{hotspotDebug}}" class="hotspot-label">其他→小语种(1)</text>
+      </view>
+      <view class="hotspot hs-other2 {{hotspotDebug ? 'debug' : ''}}"
+            bindtap="onLangTap" data-key="other"
+            data-id="other2"
+            style="{{hotspotDebug ? ('left:'+hsPos.other2.left+'%;top:'+hsPos.other2.top+'%;width:'+hsPos.other2.width+'%;height:'+hsPos.other2.height+'%;') : ''}}"
+            bindtouchstart="onHsTouchStart" catchtouchmove="onHsTouchMove" bindtouchend="onHsTouchEnd">
+        <text wx:if="{{hotspotDebug}}" class="hotspot-label">其他→小语种(2)</text>
+      </view>
       <!-- 分类热点：汉语/英语/小语种/主题/志愿 -->
-      <view class="hotspot hs-cat-cn" bindtap="onCategoryTap" data-cat="汉语"></view>
-      <view class="hotspot hs-cat-en" bindtap="onCategoryTap" data-cat="英语"></view>
-      <view class="hotspot hs-cat-minor" bindtap="onCategoryTap" data-cat="小语种"></view>
-      <view class="hotspot hs-cat-theme" bindtap="onCategoryTap" data-cat="主题"></view>
-      <view class="hotspot hs-cat-volunteer" bindtap="onCategoryTap" data-cat="志愿"></view>
+      <view class="hotspot hs-cat-cn {{hotspotDebug ? 'debug' : ''}}"
+            bindtap="onCategoryTap" data-cat="汉语"
+            data-id="汉语"
+            style="{{hotspotDebug ? ('left:'+hsPos['汉语'].left+'%;top:'+hsPos['汉语'].top+'%;width:'+hsPos['汉语'].width+'%;height:'+hsPos['汉语'].height+'%;') : ''}}"
+            bindtouchstart="onHsTouchStart" catchtouchmove="onHsTouchMove" bindtouchend="onHsTouchEnd">
+        <text wx:if="{{hotspotDebug}}" class="hotspot-label">汉语</text>
+      </view>
+      <view class="hotspot hs-cat-en {{hotspotDebug ? 'debug' : ''}}"
+            bindtap="onCategoryTap" data-cat="英语"
+            data-id="英语"
+            style="{{hotspotDebug ? ('left:'+hsPos['英语'].left+'%;top:'+hsPos['英语'].top+'%;width:'+hsPos['英语'].width+'%;height:'+hsPos['英语'].height+'%;') : ''}}"
+            bindtouchstart="onHsTouchStart" catchtouchmove="onHsTouchMove" bindtouchend="onHsTouchEnd">
+        <text wx:if="{{hotspotDebug}}" class="hotspot-label">英语</text>
+      </view>
+      <view class="hotspot hs-cat-minor {{hotspotDebug ? 'debug' : ''}}"
+            bindtap="onCategoryTap" data-cat="小语种"
+            data-id="小语种"
+            style="{{hotspotDebug ? ('left:'+hsPos['小语种'].left+'%;top:'+hsPos['小语种'].top+'%;width:'+hsPos['小语种'].width+'%;height:'+hsPos['小语种'].height+'%;') : ''}}"
+            bindtouchstart="onHsTouchStart" catchtouchmove="onHsTouchMove" bindtouchend="onHsTouchEnd">
+        <text wx:if="{{hotspotDebug}}" class="hotspot-label">小语种</text>
+      </view>
+      <view class="hotspot hs-cat-theme {{hotspotDebug ? 'debug' : ''}}"
+            bindtap="onCategoryTap" data-cat="主题"
+            data-id="主题"
+            style="{{hotspotDebug ? ('left:'+hsPos['主题'].left+'%;top:'+hsPos['主题'].top+'%;width:'+hsPos['主题'].width+'%;height:'+hsPos['主题'].height+'%;') : ''}}"
+            bindtouchstart="onHsTouchStart" catchtouchmove="onHsTouchMove" bindtouchend="onHsTouchEnd">
+        <text wx:if="{{hotspotDebug}}" class="hotspot-label">主题活动</text>
+      </view>
+      <view class="hotspot hs-cat-volunteer {{hotspotDebug ? 'debug' : ''}}"
+            bindtap="onCategoryTap" data-cat="志愿"
+            data-id="志愿"
+            style="{{hotspotDebug ? ('left:'+hsPos['志愿'].left+'%;top:'+hsPos['志愿'].top+'%;width:'+hsPos['志愿'].width+'%;height:'+hsPos['志愿'].height+'%;') : ''}}"
+            bindtouchstart="onHsTouchStart" catchtouchmove="onHsTouchMove" bindtouchend="onHsTouchEnd">
+        <text wx:if="{{hotspotDebug}}" class="hotspot-label">志愿活动</text>
+      </view>
     </view>
   </view>
 

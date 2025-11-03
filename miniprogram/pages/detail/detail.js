@@ -19,13 +19,15 @@ Page({
       status: '未满员且可报名',
       content: ['自由交流与口语练习', '主题分享：旅行英语', '报名分组：外国人/中国人']
     },
-    ctaText: '报名 ¥20'
+    ctaText: '报名 ¥20',
+    applyDisabled: false
   },
   onLoad(query) {
     const id = query?.id || null;
     let detail = this.data.detail;
+    let cached = null;
     try {
-      const cached = wx.getStorageSync('lastActivityDetail') || null;
+      cached = wx.getStorageSync('lastActivityDetail') || null;
       if (cached && (cached.title || cached.mainImage)) {
         detail = {
           images: Array.isArray(cached.images) && cached.images.length ? cached.images : (cached.mainImage ? [cached.mainImage] : detail.images),
@@ -46,7 +48,8 @@ Page({
     } catch (_) {}
     // 去重国旗，避免重复显示
     const flags = Array.isArray(detail.flags) ? detail.flags.filter((f, i, arr) => arr.indexOf(f) === i) : [];
-    this.setData({ id, detail: { ...detail, flags } });
+    const hasDetail = !!(cached && (cached.title || cached.mainImage || (Array.isArray(cached.images) && cached.images.length > 0)));
+    this.setData({ id, detail: { ...detail, flags }, hasRealData: hasDetail });
     this.updateCTA();
     try {
       wx.showShareMenu({ withShareTicket: true, menus: ['shareAppMessage', 'shareTimeline'] });
@@ -54,23 +57,54 @@ Page({
   },
   updateCTA() {
     const { detail } = this.data;
+    // 兼容解析 YYYY-MM-DD HH:mm 到 Date
+    const parse = (s) => {
+      if (!s) return null;
+      const iso = String(s).replace(' ', 'T');
+      const d1 = new Date(iso);
+      if (!Number.isNaN(d1.getTime())) return d1;
+      try {
+        const [datePart, timePart] = String(s).split(' ');
+        const [y, m, day] = (datePart || '').split('-').map((n) => Number(n));
+        const [hh, mm] = (timePart || '00:00').split(':').map((n) => Number(n));
+        return new Date(y, m - 1, day, hh, mm, 0);
+      } catch (_) {
+        return null;
+      }
+    };
+    const now = new Date();
+    const startTime = parse(detail.start);
+    const hasStarted = !!(startTime && now >= startTime);
+
     let text = '';
-    switch (detail.status) {
-      case '未满员且可报名':
-        text = detail.price > 0 ? `报名 ¥${detail.price}` : '免费报名';
-        break;
-      case '满员候补':
-        text = detail.price > 0 ? `候补报名 ¥${detail.price}` : '候补报名';
-        break;
-      case '已报名':
-        text = '已报名';
-        break;
-      default:
-        text = '活动已结束';
+    let disabled = false;
+    if (hasStarted) {
+      text = '报名已截止';
+      disabled = true;
+    } else {
+      switch (detail.status) {
+        case '未满员且可报名':
+          text = detail.price > 0 ? `报名 ¥${detail.price}` : '免费报名';
+          break;
+        case '满员候补':
+          text = detail.price > 0 ? `候补报名 ¥${detail.price}` : '候补报名';
+          break;
+        case '已报名':
+          text = '已报名';
+          disabled = true; // 已报名不再重复报名
+          break;
+        default:
+          text = '活动已结束';
+          disabled = true;
+      }
     }
-    this.setData({ ctaText: text });
+    this.setData({ ctaText: text, applyDisabled: disabled });
   },
   onApply() {
+    if (this.data.applyDisabled) {
+      wx.showToast({ title: '报名已截止', icon: 'none' });
+      return;
+    }
     const { detail } = this.data;
     if (detail.status === '已报名' || detail.status === '已结束') return;
     if (detail.status === '满员候补') {
@@ -101,19 +135,23 @@ Page({
     wx.navigateTo({ url: `/pages/pay/pay?id=${id || ''}&price=${price}&title=${title}&start=${start}&end=${end}&place=${place}&image=${image}${memberIdParam}` });
   },
   onShareAppMessage() {
-    const { detail } = this.data;
-    return {
-      title: detail.title,
-      path: `/pages/detail/detail?id=${this.data.id || ''}`,
-      imageUrl: detail.images?.[0]
+    const { detail, hasRealData } = this.data;
+    const res = {
+      title: hasRealData ? (detail.title || '活动详情') : '活动详情',
+      path: `/pages/detail/detail?id=${this.data.id || ''}`
     };
+    const img = hasRealData ? (detail.images && detail.images[0]) : undefined;
+    if (img) res.imageUrl = img;
+    return res;
   },
   onShareTimeline() {
-    const { detail } = this.data;
-    return {
-      title: detail.title,
-      query: `id=${this.data.id || ''}`,
-      imageUrl: detail.images?.[0]
+    const { detail, hasRealData } = this.data;
+    const res = {
+      title: hasRealData ? (detail.title || '活动详情') : '活动详情',
+      query: `id=${this.data.id || ''}`
     };
+    const img = hasRealData ? (detail.images && detail.images[0]) : undefined;
+    if (img) res.imageUrl = img;
+    return res;
   }
 });

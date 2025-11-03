@@ -1,3 +1,6 @@
 {
-  "navigationBarTitleText": "来玩"
+  "navigationBarTitleText": "来玩",
+  "navigationStyle": "custom",
+  "enableShareAppMessage": true,
+  "enableShareTimeline": true
 }

@@ -1,3 +1,26 @@
+/* 顶部返回按钮，与个人信息编辑页风格统一（简洁箭头样式） */
+.back-btn {
+    position: absolute;
+    left: 24rpx;
+    top: 0rpx;
+    width: 64rpx;
+    height: 64rpx;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+    background-color: transparent;
+    background: none;
+    border: none;
+    box-shadow: none;
+  }
+.back-btn text {
+  color: #111827; /* 与信息页文本色一致 */
+  font-size: 34rpx;
+  font-weight: 600;
+  line-height: 1;
+}
+
 .container { padding: 24rpx; position: relative; }
 .mine-page {
   padding: 32rpx;
@@ -89,3 +112,8 @@
 .auth-tip { margin-top: 16rpx; color: #666; text-align: center; }
 .row + .row { margin-top: 8rpx; }
 .row.compact { margin-top: 0; }
+.custom-nav { position: fixed; top: 0; left: 0; width: 100%; background: #fff; z-index: 1000; }
+.nav-content { height: 44px; display: flex; align-items: center; justify-content: center; position: relative; }
+.nav-back { position: absolute; left: 0; top: 0; height: 44px; width: 88rpx; display: flex; align-items: center; justify-content: center; background: transparent; }
+.nav-back text { color: #111827; font-size: 34rpx; font-weight: 600; line-height: 1; }
+.nav-title { font-size: 34rpx; font-weight: 600; color: #111827; }

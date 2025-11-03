@@ -1,26 +1,17 @@
 <view class="page">
   <view class="section">
-    <view class="section-title">基础信息（不可修改）</view>
+    <view class="section-title">注册基本信息（可修改）</view>
     <view class="row">
       <text class="label">性别</text>
-      <input class="input" value="{{readonly.gender}}" disabled />
+      <radio-group class="radio-group" bindchange="onGenderChange">
+        <label class="radio-item">
+          <radio value="男" checked="{{form.gender === '男'}}" />男
+        </label>
+        <label class="radio-item">
+          <radio value="女" checked="{{form.gender === '女'}}" />女
+        </label>
+      </radio-group>
     </view>
-    <view class="row">
-      <text class="label">年龄</text>
-      <input class="input" value="{{readonly.age}}" disabled />
-    </view>
-    <view class="row">
-      <text class="label">国籍</text>
-      <input class="input" value="{{readonly.nationality}}" disabled />
-    </view>
-    <view class="row">
-      <text class="label">证件号</text>
-      <input class="input" value="{{readonly.idMasked}}" disabled />
-    </view>
-  </view>
-
-  <view class="section">
-    <view class="section-title">偏好与资料（可修改）</view>
     <view class="row">
       <text class="label">语言</text>
       <input class="input" placeholder="例如：中文、英文" value="{{form.language}}" bindinput="onInput" data-field="language" />
@@ -34,7 +25,7 @@
       <input class="input" placeholder="常驻城市" value="{{form.city}}" bindinput="onInput" data-field="city" />
     </view>
     <view class="row">
-      <text class="label">喜好类型</text>
+      <text class="label">喜欢类型</text>
       <input class="input" placeholder="徒步/露营/路跑..." value="{{form.favorite}}" bindinput="onInput" data-field="favorite" />
     </view>
   </view>

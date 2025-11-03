@@ -11,13 +11,8 @@ function ensureLogin() {
 
 Page({
   data: {
-    readonly: {
-      gender: '女',
-      age: 28,
-      nationality: '中国',
-      idMasked: '420***********1234'
-    },
     form: {
+      gender: '',
       language: '',
       occupation: '',
       city: '',
@@ -29,8 +24,29 @@ Page({
     if (!ensureLogin()) return
     wx.showLoading({ title: '加载资料' })
     try {
-      const prof = await api.getUserProfile()
-      this.setData({ readonly: prof.readonly, form: prof.form })
+      const me = await api.getMe()
+      let memberId = Number(me?.memberId || 0)
+      let m = null
+      if (!Number.isFinite(memberId) || memberId <= 0) {
+        const baseName = me?.nickname || me?.username || 'Member'
+        const created = await api.createMember({ nameEn: baseName })
+        if (created && created.id) {
+          await api.linkMember({ username: me?.username, memberId: created.id })
+          memberId = created.id
+        }
+      }
+      m = await api.getMember(memberId)
+      this.setData({
+        memberId,
+        member: m || null,
+        form: {
+          gender: m?.gender || '',
+          language: m?.language || '',
+          occupation: m?.occupation || '',
+          city: m?.city || '',
+          favorite: m?.favorite || ''
+        }
+      })
     } catch (e) {
       wx.showToast({ title: '加载失败', icon: 'none' })
     } finally {
@@ -48,8 +64,18 @@ Page({
     this.setData({ [`form.${field}`]: value })
   },
 
+  onGenderChange(e) {
+    const value = e.detail.value
+    this.setData({ 'form.gender': value })
+  },
+
   async onSave() {
-    const { language, occupation, city, favorite } = this.data.form
+    const { gender, language, occupation, city, favorite } = this.data.form
+    const mid = Number(this.data.memberId || 0)
+    if (!Number.isFinite(mid) || mid <= 0) {
+      wx.showToast({ title: '未绑定会员ID', icon: 'none' })
+      return
+    }
     if (!language || !occupation || !city) {
       wx.showToast({ title: '请完善信息', icon: 'none' })
       return
@@ -60,8 +86,9 @@ Page({
     }
     wx.showLoading({ title: '保存中' })
     try {
-      const res = await api.updateUserProfile({ language, occupation, city, favorite })
-      if (res && res.ok) {
+      const m = this.data.member || {}
+      const res = await api.updateMember(mid, { ...m, gender, language, occupation, city, favorite })
+      if (res && res.id) {
         wx.showToast({ title: '修改成功', icon: 'success' })
       } else {
         wx.showToast({ title: '保存失败', icon: 'none' })

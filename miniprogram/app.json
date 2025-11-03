@@ -1,11 +1,17 @@
 {
   "pages": [
-    "pages/work/work",
     "pages/index/index",
+    "pages/work/work",
     "pages/login/login",
 
     "pages/login/register/register",
     "pages/mine/mine",
+    "pages/mine/info/info",
+    "pages/mine/status/status",
+    "pages/mine/refund/refund",
+    "pages/mine/points/points",
+    "pages/mine/password/password",
+    "pages/mine/voucher/voucher",
     "pages/detail/detail",
     "pages/pay/pay",
     "pages/cooperate/cooperate"

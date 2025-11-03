@@ -201,6 +201,10 @@
                 <th>性别</th>
                 <th>年龄</th>
                 <th>国籍</th>
+                <th>语言</th>
+                <th>职业</th>
+                <th>城市</th>
+                <th>喜好</th>
                 <th>注册时间</th>
                 <th>分组</th>
                 <th>累计参与</th>
@@ -215,6 +219,10 @@
                 <td>{{ m.gender }}</td>
                 <td>{{ m.age }}</td>
                 <td>{{ m.flag }} {{ m.nation }}</td>
+                <td>{{ m.language }}</td>
+                <td>{{ m.occupation }}</td>
+                <td>{{ m.city }}</td>
+                <td>{{ m.favorite }}</td>
                 <td>{{ m.registeredAt }}</td>
                 <td>
                   <select :value="m.group" @change="updateMemberGroup(m, $event.target.value)">
@@ -324,6 +332,10 @@
                 <label>性别<input :value="memberDetail.gender" disabled /></label>
                 <label>年龄<input :value="memberDetail.age" disabled /></label>
                 <label>国籍<input :value="memberDetail.nation" disabled /></label>
+                <label>语言<input :value="memberDetail.language" disabled /></label>
+                <label>职业<input :value="memberDetail.occupation" disabled /></label>
+                <label>城市<input :value="memberDetail.city" disabled /></label>
+                <label>喜好<input :value="memberDetail.favorite" disabled /></label>
                 <label>注册时间<input :value="memberDetail.registeredAt" disabled /></label>
                 <label>分组
                   <select :value="memberDetail.group" disabled>
@@ -333,7 +345,26 @@
                 <label>累计参与<input :value="memberDetail.totalParticipations" disabled /></label>
                 <label>状态<input :value="memberDetail.disabled ? '已禁用' : '正常'" disabled /></label>
               </div>
+              <div class="form-section" style="margin-top:12px;">
+                <div class="label">资料编辑</div>
+                <div class="form-grid">
+                  <label>性别
+                    <select v-model="memberDetail.gender" :disabled="!memberDetailEditing">
+                      <option value="">未设置</option>
+                      <option value="男">男</option>
+                      <option value="女">女</option>
+                      <option value="其他">其他</option>
+                    </select>
+                  </label>
+                  <label>语言<input v-model="memberDetail.language" :disabled="!memberDetailEditing" /></label>
+                  <label>职业<input v-model="memberDetail.occupation" :disabled="!memberDetailEditing" /></label>
+                  <label>城市<input v-model="memberDetail.city" :disabled="!memberDetailEditing" /></label>
+                  <label>喜好<input v-model="memberDetail.favorite" :disabled="!memberDetailEditing" /></label>
+                </div>
+              </div>
               <div class="modal-actions">
+                <button class="ghost" @click="memberDetailEditing = !memberDetailEditing">{{ memberDetailEditing ? '退出编辑' : '编辑资料' }}</button>
+                <button @click="saveMemberProfile" :disabled="savingMember || !memberDetailEditing">保存</button>
                 <button class="ghost" @click="closeMemberModal">关闭</button>
               </div>
             </div>

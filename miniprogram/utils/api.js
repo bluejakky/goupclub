@@ -63,9 +63,10 @@ module.exports = {
     return { ok: true }
   },
 
-  async getRefundRecords() {
-    await delay()
-    return JSON.parse(JSON.stringify(mock.refunds))
+  async getRefundRecords(memberId) {
+    // 采用 orders 列表过滤出该会员的退款订单
+    // 说明：后端当前未提供专门的退款记录接口，这里使用关键词匹配 memberId + status=refunded 的方式
+    return request({ url: `/orders`, method: 'GET', data: { status: 'refunded', keyword: String(memberId), sortBy: 'refundAt', sortOrder: 'desc', page: 1, pageSize: 100 } })
   },
 
   async getVouchers() {
@@ -95,6 +96,15 @@ module.exports = {
   },
   async getMember(id) {
     return request({ url: `/members/${id}`, method: 'GET' })
+  },
+  async updateMember(id, payload) {
+    return request({ url: `/members/${id}`, method: 'PUT', data: payload })
+  },
+  async createMember(payload) {
+    return request({ url: '/members', method: 'POST', data: payload })
+  },
+  async linkMember({ username, memberId }) {
+    return request({ url: '/admin/link-member', method: 'POST', data: { username, memberId } })
   },
   async getInvitationCode(memberId) {
     return request({ url: `/referral/code/${memberId}`, method: 'GET' })

@@ -23,3 +23,7 @@
 .signup-count { color: #6b7280; }
 .share-icon-only::after { content: none; }
 /* 已移除设计叠层相关样式 */
+.apply.disabled, .apply[disabled] { background: #e5e7eb; color: #9ca3af; }
+.apply.disabled::after, .apply[disabled]::after { border: none; }
+.apply.disabled:active { background: #e5e7eb; }
+.apply[disabled] { opacity: 1; }

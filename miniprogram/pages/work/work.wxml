@@ -1,4 +1,10 @@
-<view class="container">
+<view class="custom-nav" style="padding-top: {{statusBarHeight}}px;">
+  <view class="nav-content">
+    <view class="nav-back" bindtap="onBack"><text>＜</text></view>
+    <text class="nav-title">来玩</text>
+  </view>
+</view>
+<view class="container" style="padding-top: {{navHeight}}px;">
   <!-- 顶部空间已移除星球效果 -->
   <view class="search">
       <view class="search-input">

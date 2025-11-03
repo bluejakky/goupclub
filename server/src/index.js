@@ -92,11 +92,31 @@ const ensureMembersAvatarColumn = async () => {
     console.warn('ensureMembersAvatarColumn failed:', e?.message || e);
   }
 };
+// 新增：确保成员偏好相关列存在
+const ensureMembersProfileColumns = async () => {
+  try {
+    const cols = await query(
+      "SELECT COLUMN_NAME FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'members'"
+    );
+    const set = new Set(cols.map((c) => c.COLUMN_NAME));
+    const ops = [];
+    if (!set.has('language')) ops.push("ALTER TABLE members ADD COLUMN language VARCHAR(64) NULL");
+    if (!set.has('occupation')) ops.push("ALTER TABLE members ADD COLUMN occupation VARCHAR(64) NULL");
+    if (!set.has('city')) ops.push("ALTER TABLE members ADD COLUMN city VARCHAR(64) NULL");
+    if (!set.has('favorite')) ops.push("ALTER TABLE members ADD COLUMN favorite VARCHAR(128) NULL");
+    for (const sql of ops) {
+      await query(sql);
+    }
+  } catch (e) {
+    console.warn('ensureMembersProfileColumns failed:', e?.message || e);
+  }
+};
 // kickoff schema check on startup
 ensureVoucherConfigSchema();
 ensureAdminUsersSchema();
 ensurePaymentErrorsSchema();
 ensureMembersAvatarColumn();
+ensureMembersProfileColumns();
 ensureCooperateRequestsSchema();
 // Ensure points-related tables
 const ensurePointsSchema = async () => {
@@ -562,7 +582,7 @@ app.patch('/api/activities/:id/status', async (req, res) => {
 app.get('/api/members', async (req, res) => {
   try {
     const rows = await query(
-      'SELECT id, nameEn, gender, age, nation, avatar, flag, DATE_FORMAT(registeredAt, "%Y-%m-%d") AS registeredAt, memberGroup AS `group`, totalParticipations, disabled FROM members ORDER BY id DESC'
+      'SELECT id, nameEn, gender, age, nation, avatar, flag, language, occupation, city, favorite, DATE_FORMAT(registeredAt, "%Y-%m-%d") AS registeredAt, memberGroup AS `group`, totalParticipations, disabled FROM members ORDER BY id DESC'
     );
     res.json(rows);
   } catch (e) {
@@ -573,7 +593,7 @@ app.get('/api/members/:id', async (req, res) => {
   const id = Number(req.params.id);
   try {
     const rows = await query(
-      'SELECT id, nameEn, gender, age, nation, avatar, flag, DATE_FORMAT(registeredAt, "%Y-%m-%d") AS registeredAt, memberGroup AS `group`, totalParticipations, disabled FROM members WHERE id = ?',
+      'SELECT id, nameEn, gender, age, nation, avatar, flag, language, occupation, city, favorite, DATE_FORMAT(registeredAt, "%Y-%m-%d") AS registeredAt, memberGroup AS `group`, totalParticipations, disabled FROM members WHERE id = ?',
       [id]
     );
     if (!rows[0]) return res.status(404).json({ error: 'not found' });
@@ -586,7 +606,7 @@ app.post('/api/members', async (req, res) => {
   const m = req.body || {};
   try {
     const result = await query(
-      'INSERT INTO members (nameEn, gender, age, nation, flag, registeredAt, memberGroup, totalParticipations, disabled, avatar) VALUES (?,?,?,?,?,?,?,?,?,?)',
+      'INSERT INTO members (nameEn, gender, age, nation, flag, registeredAt, memberGroup, totalParticipations, disabled, avatar, language, occupation, city, favorite) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)',
       [
         m.nameEn,
         m.gender ?? null,
@@ -597,7 +617,11 @@ app.post('/api/members', async (req, res) => {
         m.group ?? null,
         Number.isFinite(Number(m.totalParticipations)) ? Number(m.totalParticipations) : 0,
         m.disabled ? 1 : 0,
-        m.avatar ?? null
+        m.avatar ?? null,
+        m.language ?? null,
+        m.occupation ?? null,
+        m.city ?? null,
+        m.favorite ?? null
       ]
     );
     res.json({ id: result.insertId, ...m });
@@ -610,7 +634,7 @@ app.put('/api/members/:id', async (req, res) => {
   const m = req.body || {};
   try {
     await query(
-      'UPDATE members SET nameEn=?, gender=?, age=?, nation=?, flag=?, registeredAt=?, memberGroup=?, totalParticipations=?, disabled=?, avatar=? WHERE id=?',
+      'UPDATE members SET nameEn=?, gender=?, age=?, nation=?, flag=?, registeredAt=?, memberGroup=?, totalParticipations=?, disabled=?, avatar=?, language=?, occupation=?, city=?, favorite=? WHERE id=?',
       [
         m.nameEn,
         m.gender ?? null,
@@ -622,11 +646,15 @@ app.put('/api/members/:id', async (req, res) => {
         Number.isFinite(Number(m.totalParticipations)) ? Number(m.totalParticipations) : 0,
         m.disabled ? 1 : 0,
         m.avatar ?? null,
+        m.language ?? null,
+        m.occupation ?? null,
+        m.city ?? null,
+        m.favorite ?? null,
         id
       ]
     );
     const rows = await query(
-      'SELECT id, nameEn, gender, age, nation, avatar, flag, DATE_FORMAT(registeredAt, "%Y-%m-%d") AS registeredAt, memberGroup AS `group`, totalParticipations, disabled FROM members WHERE id = ?',
+      'SELECT id, nameEn, gender, age, nation, avatar, flag, language, occupation, city, favorite, DATE_FORMAT(registeredAt, "%Y-%m-%d") AS registeredAt, memberGroup AS `group`, totalParticipations, disabled FROM members WHERE id = ?',
       [id]
     );
     res.json(rows[0] || { id, ...m });
@@ -729,6 +757,15 @@ app.post('/api/activity/signup', async (req, res) => {
       const enrolled = Number(activity.enrolled || 0);
       const waitlist = Number(activity.waitlist || 0);
       const now = new Date();
+      // block signup if activity already started
+      try {
+        const startTime = activity.start ? new Date(activity.start) : null;
+        if (startTime && now >= startTime) {
+          await conn.rollback();
+          conn.release();
+          return res.status(403).json({ error: 'signup closed: activity started' });
+        }
+      } catch {}
       let status = 'created';
       if (max > 0 && enrolled >= max) {
         // full, increase waitlist
@@ -1071,7 +1108,7 @@ app.get('/api/payments', async (req, res) => {
     if (start) { base += ' AND createdAt >= ?'; params.push(start); }
     if (end) { base += ' AND createdAt <= ?'; params.push(end); }
     const [countRow] = await query(`SELECT COUNT(*) AS total ${base}`, params);
-    const items = await query(`SELECT id, orderId, provider, providerTxnId, status, amount, paidAt, refundAt, meta, createdAt ${base} ORDER BY ${orderField} ${sortOrder} LIMIT ? OFFSET ?`, [...params, pageSize, offset]);
+    const items = await query(`SELECT id, orderId, provider, providerTxnId, status, amount, paidAt, refundAt, meta, createdAt ${base} ORDER BY ${orderField} ${sortOrder} LIMIT ${pageSize} OFFSET ${offset}` , params);
     res.json({ total: Number(countRow?.total || 0), items, page, pageSize });
   } catch (e) {
     res.status(500).json({ error: e.message });
