@@ -5,6 +5,7 @@ on:
     branches: [ main ]
     paths:
       - 'server/**'
+      - 'admin-portal/**'
       - '.github/workflows/deploy.yml'
   workflow_dispatch:
 
