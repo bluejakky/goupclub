@@ -1,0 +1,49 @@
+name: Deploy Backend
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'server/**'
+      - '.github/workflows/deploy.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    concurrency:
+      group: deploy-prod
+      cancel-in-progress: true
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v0.1.7
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: ${{ secrets.SSH_PORT }}
+          script_stop: true
+          script: |
+            set -e
+            echo "[deploy] cd to app root: ${{ secrets.APP_DIR }}"
+            cd "${{ secrets.APP_DIR }}"
+            echo "[deploy] fetch & reset"
+            git fetch --all --prune
+            git reset --hard origin/main
+            echo "[deploy] install backend deps"
+            cd server
+            if command -v npm >/dev/null 2>&1; then echo "npm ok"; else echo "npm missing"; exit 1; fi
+            npm ci --only=production || npm install --production
+            echo "[deploy] ensure pm2"
+            if command -v pm2 >/dev/null 2>&1; then echo "pm2 ok"; else npm i -g pm2; fi
+            echo "[deploy] restart backend"
+            pm2 describe "${{ secrets.PM2_NAME }}" >/dev/null 2>&1 && pm2 reload "${{ secrets.PM2_NAME }}" || pm2 start src/index.js --name "${{ secrets.PM2_NAME }}"
+            pm2 save
+            echo "[deploy] health check"
+            curl -fsS "http://localhost:${PORT:-3000}/api/health" || true
