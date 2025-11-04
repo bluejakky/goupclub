@@ -542,9 +542,21 @@ app.get('/api/activities', async (req, res) => {
 app.post('/api/activities', async (req, res) => {
   const a = req.body || {};
   try {
+    const ndt = (v) => {
+      if (v == null) return null;
+      const s = String(v).trim();
+      if (!s) return null;
+      if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(s)) return s.replace('T', ' ') + ':00';
+      if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}$/.test(s)) return s.replace('T', ' ');
+      if (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/.test(s)) return s + ':00';
+      return s;
+    };
+    const start = ndt(a.start);
+    const end = ndt(a.end);
+    const publishedAt = ndt(a.publishedAt);
     const result = await query(
       'INSERT INTO activities (title, start, end, place, lat, lng, categoryIds, groupTags, min, max, waitlist, enrolled, price, status, isTop, isHot, publishedAt, mainImage, images, content) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)',
-      [a.title, a.start, a.end, a.place, a.lat, a.lng, JSON.stringify(a.categoryIds || []), JSON.stringify(a.groups || []), a.min || 0, a.max || 1, a.waitlist || 0, a.enrolled || 0, a.price || 0, a.status || '草稿', a.isTop ? 1 : 0, a.isHot ? 1 : 0, a.publishedAt || '', a.mainImage || '', JSON.stringify(a.images || []), a.content || '']
+      [a.title, start, end, a.place, a.lat ?? null, a.lng ?? null, JSON.stringify(a.categoryIds || []), JSON.stringify(a.groups || []), a.min || 0, a.max || 1, a.waitlist || 0, a.enrolled || 0, a.price || 0, a.status || '草稿', a.isTop ? 1 : 0, a.isHot ? 1 : 0, publishedAt, a.mainImage || '', JSON.stringify(a.images || []), a.content || '']
     );
     res.json({ id: result.insertId, ...a });
   } catch (e) {
@@ -555,9 +567,21 @@ app.put('/api/activities/:id', async (req, res) => {
   const id = Number(req.params.id);
   const a = req.body || {};
   try {
+    const ndt = (v) => {
+      if (v == null) return null;
+      const s = String(v).trim();
+      if (!s) return null;
+      if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(s)) return s.replace('T', ' ') + ':00';
+      if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}$/.test(s)) return s.replace('T', ' ');
+      if (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/.test(s)) return s + ':00';
+      return s;
+    };
+    const start = ndt(a.start);
+    const end = ndt(a.end);
+    const publishedAt = ndt(a.publishedAt);
     await query(
       'UPDATE activities SET title=?, start=?, end=?, place=?, lat=?, lng=?, categoryIds=?, groupTags=?, min=?, max=?, waitlist=?, enrolled=?, price=?, status=?, isTop=?, isHot=?, publishedAt=?, mainImage=?, images=?, content=? WHERE id=?',
-      [a.title, a.start, a.end, a.place, a.lat, a.lng, JSON.stringify(a.categoryIds || []), JSON.stringify(a.groups || []), a.min || 0, a.max || 1, a.waitlist || 0, a.enrolled || 0, a.price || 0, a.status || '草稿', a.isTop ? 1 : 0, a.isHot ? 1 : 0, a.publishedAt || '', a.mainImage || '', JSON.stringify(a.images || []), a.content || '', id]
+      [a.title, start, end, a.place, a.lat ?? null, a.lng ?? null, JSON.stringify(a.categoryIds || []), JSON.stringify(a.groups || []), a.min || 0, a.max || 1, a.waitlist || 0, a.enrolled || 0, a.price || 0, a.status || '草稿', a.isTop ? 1 : 0, a.isHot ? 1 : 0, publishedAt, a.mainImage || '', JSON.stringify(a.images || []), a.content || '', id]
     );
     const rows = await query(
       'SELECT id, title, start, end, place, lat, lng, categoryIds, groupTags AS `groups`, min, max, waitlist, enrolled, price, status, isTop, isHot, publishedAt, mainImage, images, content FROM activities WHERE id = ?',
