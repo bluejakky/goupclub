@@ -7,7 +7,7 @@ import path from 'path';
 import cron from 'node-cron';
 import XLSX from 'xlsx';
 import { ChartJSNodeCanvas } from 'chartjs-node-canvas';
-import rateLimit from 'express-rate-limit';
+import rateLimit, { ipKeyGenerator } from 'express-rate-limit';
 import jwt from 'jsonwebtoken';
 import multer from 'multer';
 import { pool, query } from './db.js';
@@ -22,7 +22,7 @@ const { CORS_ORIGIN = '*' } = process.env;
 app.use(cors({ origin: CORS_ORIGIN === '*' ? true : CORS_ORIGIN }));
 app.use(express.json({ limit: '1mb', verify: (req, res, buf) => { req.rawBody = buf.toString('utf8') } }));
 app.use(express.urlencoded({ extended: false })); // 支持支付宝回调的表单解析
-const limiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 300, standardHeaders: true, legacyHeaders: false, keyGenerator: (req) => req.ip, validate: { xForwardedForHeader: false } });
+const limiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 300, standardHeaders: true, legacyHeaders: false, keyGenerator: (req) => ipKeyGenerator(req.ip), validate: { xForwardedForHeader: false } });
 app.use(limiter);
 // Static hosting for uploaded files
 const uploadDir = path.join(process.cwd(), 'uploads');
