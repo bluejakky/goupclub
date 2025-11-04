@@ -411,6 +411,15 @@ createApp({
         if (!el) return;
         const hasCoord = activityForm.lat != null && activityForm.lng != null;
         const center = hasCoord ? [activityForm.lat, activityForm.lng] : [31.2304, 121.4737];
+        // 如果地图实例存在但容器已被销毁或替换，重新创建实例
+        try {
+          if (leafletMap && leafletMap._container !== el) {
+            leafletMap.remove();
+            leafletMap = null;
+            leafletMarker = null;
+            searchMarkers = null;
+          }
+        } catch (e) {}
         if (!leafletMap) {
           leafletMap = L.map(el).setView(center, 11);
           L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap' }).addTo(leafletMap);
@@ -439,11 +448,23 @@ createApp({
           leafletMap.setView(center);
           leafletMap.invalidateSize();
         }
+        // 轻微延迟再次刷新尺寸，避免弹窗动画影响初次渲染
+        setTimeout(() => { try { leafletMap && leafletMap.invalidateSize(); } catch (e) {} }, 200);
       });
     };
     const closePlacePicker = () => {
       showPlacePicker.value = false;
       try { document.body.style.overflow = ''; } catch (e) {}
+      // 关闭时清理地图实例，避免下次打开容器失效
+      try {
+        if (leafletMap) { leafletMap.remove(); }
+      } catch (e) {}
+      leafletMap = null;
+      leafletMarker = null;
+      if (searchMarkers) {
+        try { searchMarkers.clearLayers(); } catch (e) {}
+      }
+      searchMarkers = null;
     };
     const searchPlace = async () => {
       const q = placeSearchKeyword.value.trim();
