@@ -311,8 +311,16 @@ createApp({
       payload.lat = (activityForm.lat === null || activityForm.lat === undefined || activityForm.lat === '') ? null : Number(activityForm.lat);
       payload.lng = (activityForm.lng === null || activityForm.lng === undefined || activityForm.lng === '') ? null : Number(activityForm.lng);
       try { if (quillInstance) payload.content = quillInstance.root.innerHTML || ''; } catch (e) {}
+      // 统一将可选文本字段的 undefined/空字符串 转为 null，避免后端 SQL 绑定错误
+      payload.place = String(payload.place || '').trim() || null;
+      payload.mainImage = String(payload.mainImage || '').trim() || null;
+      payload.content = (typeof payload.content === 'string' && payload.content.trim() !== '') ? payload.content : null;
+      // 处理发布时间：发布状态未填则补当前时间；非发布状态则为 null
       if (payload.status === '已发布' && !payload.publishedAt) {
         payload.publishedAt = new Date().toISOString().slice(0,16);
+      } else {
+        const v = String(payload.publishedAt || '').trim();
+        payload.publishedAt = v ? v : null;
       }
       if (api.useApi.value) {
         try {
