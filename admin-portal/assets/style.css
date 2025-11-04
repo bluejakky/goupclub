@@ -178,3 +178,8 @@ body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Ro
 
 /* 活动列表空状态 */
 .table .empty-row td { text-align: center; color: var(--muted); padding: 20px; }
+
+/* 富文本编辑器默认字体颜色设为黑色 */
+.ql-editor { color: #000 !important; }
+.ql-snow .ql-editor { color: #000 !important; }
+.ql-editor p, .ql-editor span, .ql-editor div { color: #000 !important; }
