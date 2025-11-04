@@ -28,22 +28,37 @@
 .main-image-wrap { position: relative; }
 .hotspot { position: absolute; z-index: 2; /* 默认透明，可临时改为有色查看范围 */ background: rgba(255,255,255,0); }
 /* 语言热点：根据用户提供的精准百分比 */
-.hs-nihao { left: 21.31%; top: 13.61%; width: 22%; height: 8%; }
-.hs-hello { left: 57.98%; top: 1.45%; width: 22%; height: 8%; }
-.hs-other { left: 2.89%; top: 0.7%; width: 22%; height: 8%; }
- .hs-other1 { left: 76.35%; top: 10.21%; width: 22%; height: 8%; }
- .hs-other2 { left: 25.49%; top: 0.77%; width: 22%; height: 8%; }
+.hs-nihao { left: 11.49%; top: 10.04%; width: 37.39%; height: 13.37%; }
+.hs-hello { left: 53.64%; top: 0.65%; width: 41.8%; height: 7.99%; }
+.hs-other { left: 1.61%; top: 0.7%; width: 22%; height: 8%; }
+.hs-other1 { left: 74.3%; top: 9.47%; width: 21.74%; height: 14.55%; }
+.hs-other2 { left: 25.13%; top: 0.7%; width: 26.83%; height: 8.68%; }
+/* 新增两个：other3/other4 静态坐标（可在调试模式下拖拽微调） */
+.hs-other3 { left: 3.07%; top: 10.76%; width: 7.54%; height: 13.25%; }
+.hs-other4 { left: 53.68%; top: 19.73%; width: 42.12%; height: 4.16%; }
 /* 分类热点：汉语/英语/小语种/主题/志愿 */
-.hs-cat-cn { left: 4.32%; top: 45.42%; width: 22%; height: 8%; }
-.hs-cat-en { left: 53.36%; top: 46.18%; width: 22%; height: 8%; }
-.hs-cat-minor { left: 52.3%; top: 59.95%; width: 22%; height: 8%; }
-.hs-cat-theme { left: 5.65%; top: 73.67%; width: 26%; height: 10%; }
-.hs-cat-volunteer { left: 6.26%; top: 87.95%; width: 26%; height: 10%; }
+.hs-cat-cn { left: 3.15%; top: 44.6%; width: 44.46%; height: 26.5%; }
+.hs-cat-en { left: 52.38%; top: 44.21%; width: 42.59%; height: 12.08%; }
+.hs-cat-minor { left: 53.27%; top: 58.16%; width: 42.62%; height: 12.53%; }
+.hs-cat-theme { left: 3.89%; top: 73.13%; width: 92.19%; height: 12.34%; }
+.hs-cat-volunteer { left: 4.47%; top: 87.8%; width: 89.2%; height: 11%; }
 
 /* 热点调试模式样式：显示范围与标签 */
 .hotspot.debug { background: rgba(0,128,255,0.15); border: 1rpx dashed #08f; }
 .hotspot-label { position: absolute; left: 4rpx; top: 4rpx; font-size: 20rpx; color: #084; background: rgba(255,255,255,0.65); padding: 2rpx 6rpx; border-radius: 6rpx; }
 .hotspot-debug-toggle { position: absolute; right: 8rpx; top: 8rpx; z-index: 3; background: rgba(17,24,39,0.85); color: #fff; font-size: 24rpx; padding: 8rpx 12rpx; border-radius: 10rpx; }
- .hotspot-debug-toggle:active { opacity: 0.9; }
- .hotspot-debug-copy { position: absolute; right: 8rpx; top: 64rpx; z-index: 3; background: rgba(8,120,44,0.95); color: #fff; font-size: 24rpx; padding: 8rpx 12rpx; border-radius: 10rpx; }
- .hotspot-debug-copy:active { opacity: 0.92; }
+.hotspot-debug-copy { position: absolute; right: 8rpx; top: 64rpx; z-index: 3; background: rgba(8,120,44,0.95); color: #fff; font-size: 24rpx; padding: 8rpx 12rpx; border-radius: 10rpx; }
+
+/* 新增：热点缩放手柄样式（调试模式显示） */
+.hotspot-resize {
+  position: absolute;
+  right: 4rpx;
+  bottom: 4rpx;
+  width: 28rpx;
+  height: 28rpx;
+  border-radius: 50%;
+  background: rgba(8,120,44,0.9);
+  box-shadow: 0 4rpx 10rpx rgba(0,0,0,0.18);
+  z-index: 4;
+}
+.hotspot-resize:active { opacity: 0.9; }

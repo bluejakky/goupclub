@@ -79,22 +79,35 @@
 .country-search-overlay {
   position: fixed;
   left: 0; right: 0; top: 0; bottom: 0;
-  background: rgba(0,0,0,.4);
-  z-index: 999;
+  background: rgba(0,0,0,.45);
+  z-index: 1000;
   display: flex;
   align-items: center;
   justify-content: center;
 }
+/* 搜索弹窗容器样式 */
 .overlay-card {
-  width: 88%;
-  max-height: 80%;
+  width: 92%;
+  max-height: 82%;
   background: #fff;
   border-radius: 16rpx;
   box-shadow: 0 12rpx 24rpx rgba(0,0,0,.16);
   display: flex;
   flex-direction: column;
 }
-.overlay-header {
+/* 文档弹窗容器样式 */
+.doc-card {
+  width: 92%;
+  max-height: 82%;
+  background: #fff;
+  border-radius: 16rpx;
+  box-shadow: 0 12rpx 24rpx rgba(0,0,0,.16);
+  display: flex;
+  flex-direction: column;
+}
+/* 头部样式 */
+.overlay-header,
+.doc-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -102,14 +115,42 @@
   border-bottom: 1rpx solid #eee;
 }
 .overlay-title { font-weight: 600; color: #111; }
-.overlay-close { color: #666; }
+.overlay-close { color: #2563eb; }
+.doc-title { font-weight: 600; color: #111; }
+.doc-close-icon {
+  display: inline-block;
+  width: 28rpx;
+  height: 28rpx;
+  line-height: 28rpx;
+  text-align: center;
+  font-size: 28rpx;
+  font-weight: 700;
+  color: #2563eb;
+}
+
+/* 文档内容滚动区域 */
+.doc-body {
+  flex: 1;
+  padding: 16rpx 20rpx;
+  height: 64vh; /* 明确高度，确保 scroll-view 可滚动 */
+  box-sizing: border-box;
+}
+.doc-text {
+  white-space: pre-wrap;
+  font-size: 22rpx;
+  color: #0f172a;
+  line-height: 1.7;
+  word-break: break-word;
+}
+
 .search-input {
   margin: 16rpx 20rpx;
   padding: 12rpx;
   border: 1rpx solid #e5e7eb;
   border-radius: 8rpx;
 }
-.result-list { flex: 1; padding: 0 20rpx 20rpx; }
+/* 为搜索结果滚动区域设定明确高度，确保可滚动 */
+.result-list { flex: 1; padding: 0 20rpx 20rpx; height: 64vh; box-sizing: border-box; }
 .result-item {
   display: flex;
   align-items: center;
@@ -121,3 +162,5 @@
 .result-flag { font-size: 32rpx; }
 .result-name { flex: 1; font-size: 26rpx; color: #0f172a; }
 .result-region { font-size: 22rpx; color: #64748b; }
+.view-link { color: #2563eb; margin-left: 16rpx; font-size: 22rpx; }
+.view-link:active { opacity: .8; }

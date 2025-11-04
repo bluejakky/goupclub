@@ -6,18 +6,22 @@ Page({
     searchResults: [],
     searching: false,
     hotspotDebug: false,
+    showDebugControls: false,
+    mainImageSrc: '/assets/mainpage.png',
     hsPos: {
-      nihao: { left: 21.31, top: 13.61, width: 22, height: 8 },
-      hello: { left: 57.98, top: 1.45, width: 22, height: 8 },
-      other: { left: 2.89, top: 0.7, width: 22, height: 8 },
-      other1: { left: 76.35, top: 10.21, width: 22, height: 8 },
-      other2: { left: 25.49, top: 0.77, width: 22, height: 8 },
-      '汉语': { left: 4.32, top: 45.42, width: 22, height: 8 },
-      '英语': { left: 53.36, top: 46.18, width: 22, height: 8 },
-      '小语种': { left: 52.3, top: 59.95, width: 22, height: 8 },
-      '主题': { left: 5.65, top: 73.67, width: 26, height: 10 },
-      '志愿': { left: 6.26, top: 87.95, width: 26, height: 10 }
-    }
+      nihao: { left: 11.49, top: 10.04, width: 37.39, height: 13.37 },
+      hello: { left: 53.64, top: 0.65, width: 41.8, height: 7.99 },
+      other: { left: 1.61, top: 0.7, width: 22, height: 8 },
+      other1: { left: 74.3, top: 9.47, width: 21.74, height: 14.55 },
+      other2: { left: 25.13, top: 0.7, width: 26.83, height: 8.68 },
+      other3: { left: 3.07, top: 10.76, width: 7.54, height: 13.25 },
+      other4: { left: 53.68, top: 19.73, width: 42.12, height: 4.16 },
+      '汉语': { left: 3.15, top: 44.6, width: 44.46, height: 26.5 },
+      '英语': { left: 52.38, top: 44.21, width: 42.59, height: 12.08 },
+      '小语种': { left: 53.27, top: 58.16, width: 42.62, height: 12.53 },
+      '主题': { left: 3.89, top: 73.13, width: 92.19, height: 12.34 },
+      '志愿': { left: 4.47, top: 87.8, width: 89.2, height: 11 }
+    },
   },
   onSearchInput(e) {
     this.setData({ keywords: e.detail.value });
@@ -38,7 +42,6 @@ Page({
           wx.showToast({ title: '未找到相关活动', icon: 'none' });
           return;
         }
-        // 自动跳转到最匹配的一条活动：优先标题完全匹配，其次包含匹配，否则取第一条
         const lowerkw = kw.toLowerCase();
         const exact = items.find(x => String(x.title || '').toLowerCase() === lowerkw);
         const contains = items.find(x => String(x.title || '').toLowerCase().includes(lowerkw)) || items.find(x => String(x.place || '').toLowerCase().includes(lowerkw));
@@ -86,6 +89,13 @@ Page({
   },
   onImageLoad() {
     this.measureMain();
+  },
+  // 新增：主图加载失败时的路径回退（本地预览使用相对路径）
+  onMainImageError() {
+    const current = String(this.data.mainImageSrc || '')
+    if (current !== '../../assets/mainpage.png') {
+      this.setData({ mainImageSrc: '../../assets/mainpage.png' })
+    }
   },
   measureMain() {
     const q = wx.createSelectorQuery();
@@ -136,6 +146,55 @@ Page({
     wx.showToast({ title: `${id}: L${pos.left}% T${pos.top}%`, icon: 'none' });
     this._drag = null;
   },
+
+  /* 新增：热点缩放（宽高可调） */
+  onHsResizeStart(e) {
+    if (!this.data.hotspotDebug) return;
+    const id = String(e.currentTarget.dataset.id || '');
+    const t = (e.touches || [])[0];
+    if (!id || !t) return;
+    const pos = this.data.hsPos[id] || {};
+    this._resize = {
+      id,
+      startX: t.pageX,
+      startY: t.pageY,
+      startWidth: Number(pos.width) || 0,
+      startHeight: Number(pos.height) || 0,
+      left: Number(pos.left) || 0,
+      top: Number(pos.top) || 0,
+    };
+  },
+  onHsResizeMove(e) {
+    if (!this.data.hotspotDebug || !this._resize || !this._wrapRect?.width) return;
+    const t = (e.touches || [])[0];
+    if (!t) return;
+    const dx = t.pageX - this._resize.startX;
+    const dy = t.pageY - this._resize.startY;
+    const dxPct = dx / this._wrapRect.width * 100;
+    const dyPct = dy / this._wrapRect.height * 100;
+    const id = this._resize.id;
+    let width = this._resize.startWidth + dxPct;
+    let height = this._resize.startHeight + dyPct;
+    const minW = 6, minH = 4; // 最小尺寸，避免过小难以点击
+    const maxW = 100 - this._resize.left;
+    const maxH = 100 - this._resize.top;
+    const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
+    width = clamp(width, minW, maxW);
+    height = clamp(height, minH, maxH);
+    this.setData({
+      [`hsPos.${id}.width`]: Number(width.toFixed(2)),
+      [`hsPos.${id}.height`]: Number(height.toFixed(2))
+    });
+  },
+  onHsResizeEnd() {
+    if (!this.data.hotspotDebug || !this._resize) return;
+    const id = this._resize.id;
+    const pos = this.data.hsPos[id] || {};
+    wx.showToast({ title: `${id}: W${pos.width}% H${pos.height}%`, icon: 'none' });
+    try { wx.setStorageSync('hsPosOverride', this.data.hsPos); } catch (_) {}
+    this._resize = null;
+  },
+
   copyHotspotConfig() {
     if (!this.data.hotspotDebug) return;
     try {
@@ -147,19 +206,26 @@ Page({
     }
   },
 
-  // 快捷跳转：设置预过滤并进入“来玩”
+  onLoad() {
+    wx.showShareMenu({ withShareTicket: true, menus: ['shareAppMessage','shareTimeline'] });
+    // 新增：加载本地存储的覆盖坐标，便于调试持久化
+    try {
+      const override = wx.getStorageSync('hsPosOverride');
+      if (override && typeof override === 'object') {
+        this.setData({ hsPos: override });
+      }
+    } catch (_) {}
+  },
   setPrefilterAndGo(pre) {
     try { wx.setStorageSync('prefilter', pre || {}); } catch (_) {}
     wx.switchTab({ url: '/pages/work/work' });
   },
-  // 语言图点击：nihao->汉语，hello->英语，其它->小语种
   onLangTap(e) {
     if (this.data.hotspotDebug) { wx.showToast({ title: '调试模式：不跳转', icon: 'none' }); return; }
     const key = String(e.currentTarget.dataset.key || '').toLowerCase();
     const lang = key === 'nihao' ? '汉语' : key === 'hello' ? '英语' : '小语种';
     this.setPrefilterAndGo({ lang });
   },
-  // 分类图点击：语言跳转为 lang；主题/志愿跳转为 type
   onCategoryTap(e) {
     if (this.data.hotspotDebug) { wx.showToast({ title: '调试模式：不跳转', icon: 'none' }); return; }
     const cat = String(e.currentTarget.dataset.cat || '');

@@ -47,7 +47,7 @@
           </view>
         </picker>
         <view class="search-trigger" bindtap="onOpenCountrySearch">
-          <image class="search-icon" src="../../assets/search.png" mode="aspectFit"></image>
+          <image class="search-icon" src="/assets/search.png" mode="aspectFit"></image>
           <text class="search-text">搜索选择</text>
         </view>
       </view>
@@ -81,9 +81,11 @@
       <checkbox-group bindchange="onAgreementChange">
         <label class="agreement-item">
           <checkbox value="payment" checked="{{agreePaymentRules}}"/> 向上GO-UP小程序支付、退款与积分规则
+          <text class="view-link" catchtap="onViewDoc" data-key="payment">查看</text>
         </label>
         <label class="agreement-item">
           <checkbox value="user" checked="{{agreeUserAgreement}}"/> 向上GO-UP小程序用户使用协议及平台法律规则
+          <text class="view-link" catchtap="onViewDoc" data-key="user">查看</text>
         </label>
       </checkbox-group>
     </view>
@@ -96,13 +98,26 @@
       </view>
       <input class="search-input" placeholder="输入国家或地区关键字" value="{{searchQuery}}" bindinput="onSearchInput"/>
       <scroll-view class="result-list" scroll-y="true">
-        <block wx:for="{{searchResults}}" wx:key="name">
+        <block wx:for="{{searchResults}}" wx:key="code">
           <view class="result-item" bindtap="onPickCountryFromSearch" data-region="{{item.region}}" data-name="{{item.name}}" data-code="{{item.code}}">
             <text class="result-flag">{{item.flag}}</text>
             <text class="result-name">{{item.name}}</text>
             <text class="result-region">{{item.region}}</text>
           </view>
         </block>
+      </scroll-view>
+    </view>
+  </view>
+  <view wx:if="{{docOverlayVisible}}" class="doc-overlay">
+    <view class="doc-card">
+      <view class="doc-header">
+        <text class="doc-title">{{docTitle}}</text>
+        <view class="doc-close" bindtap="onCloseDoc" aria-label="关闭">
+          <text class="doc-close-icon">X</text>
+        </view>
+      </view>
+      <scroll-view class="doc-body" scroll-y="true">
+        <text class="doc-text">{{docContent}}</text>
       </scroll-view>
     </view>
   </view>

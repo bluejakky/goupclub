@@ -1,11 +1,14 @@
 <view class="page with-footer">
   <view class="topbar">
     <input class="search-input" type="text" placeholder="" confirm-type="search" bindinput="onSearchInput" bindconfirm="onSearchConfirm" />
-    <image class="needwork" src="../../assets/needwork.png" mode="aspectFit" bindtap="onNeedworkTap" />
+    <image class="needwork" src="/assets/needwork.png" mode="aspectFit" bindtap="onNeedworkTap" />
   </view>
   <view class="main">
     <view class="main-image-wrap">
-      <image class="main-image" src="../../assets/mainpage.PNG" mode="widthFix" bindload="onImageLoad" />
+      <image class="main-image" src="{{mainImageSrc}}" mode="widthFix" bindload="onImageLoad" binderror="onMainImageError" />
+      <!-- 新增：热点调试开关与复制按钮 -->
+      <view wx:if="{{showDebugControls}}" class="hotspot-debug-toggle" bindtap="toggleHotspotDebug">{{hotspotDebug ? '关闭热点调试' : '开启热点调试'}}</view>
+      <view wx:if="{{showDebugControls && hotspotDebug}}" class="hotspot-debug-copy" bindtap="copyHotspotConfig">复制坐标</view>
 
       <!-- 语言快捷热点：你好/hello/其他语言 -->
       <view class="hotspot hs-nihao {{hotspotDebug ? 'debug' : ''}}"
@@ -14,13 +17,14 @@
             style="{{hotspotDebug ? ('left:'+hsPos.nihao.left+'%;top:'+hsPos.nihao.top+'%;width:'+hsPos.nihao.width+'%;height:'+hsPos.nihao.height+'%;') : ''}}"
             bindtouchstart="onHsTouchStart" catchtouchmove="onHsTouchMove" bindtouchend="onHsTouchEnd">
         <text wx:if="{{hotspotDebug}}" class="hotspot-label">你好→汉语</text>
+        <view wx:if="{{hotspotDebug}}" class="hotspot-resize" data-id="nihao" bindtouchstart="onHsResizeStart" catchtouchmove="onHsResizeMove" bindtouchend="onHsResizeEnd"></view>
       </view>
       <view class="hotspot hs-hello {{hotspotDebug ? 'debug' : ''}}"
             bindtap="onLangTap" data-key="hello"
             data-id="hello"
             style="{{hotspotDebug ? ('left:'+hsPos.hello.left+'%;top:'+hsPos.hello.top+'%;width:'+hsPos.hello.width+'%;height:'+hsPos.hello.height+'%;') : ''}}"
             bindtouchstart="onHsTouchStart" catchtouchmove="onHsTouchMove" bindtouchend="onHsTouchEnd">
-        <text wx:if="{{hotspotDebug}}" class="hotspot-label">HELLO→英语</text>
+        <view wx:if="{{hotspotDebug}}" class="hotspot-resize" data-id="hello" bindtouchstart="onHsResizeStart" catchtouchmove="onHsResizeMove" bindtouchend="onHsResizeEnd"></view>
       </view>
       <view class="hotspot hs-other {{hotspotDebug ? 'debug' : ''}}"
             bindtap="onLangTap" data-key="other"
@@ -28,6 +32,7 @@
             style="{{hotspotDebug ? ('left:'+hsPos.other.left+'%;top:'+hsPos.other.top+'%;width:'+hsPos.other.width+'%;height:'+hsPos.other.height+'%;') : ''}}"
             bindtouchstart="onHsTouchStart" catchtouchmove="onHsTouchMove" bindtouchend="onHsTouchEnd">
         <text wx:if="{{hotspotDebug}}" class="hotspot-label">其他→小语种</text>
+        <view wx:if="{{hotspotDebug}}" class="hotspot-resize" data-id="other" bindtouchstart="onHsResizeStart" catchtouchmove="onHsResizeMove" bindtouchend="onHsResizeEnd"></view>
       </view>
       <!-- 额外两个“小语种”热点（行为同 other） -->
       <view class="hotspot hs-other1 {{hotspotDebug ? 'debug' : ''}}"
@@ -36,6 +41,7 @@
             style="{{hotspotDebug ? ('left:'+hsPos.other1.left+'%;top:'+hsPos.other1.top+'%;width:'+hsPos.other1.width+'%;height:'+hsPos.other1.height+'%;') : ''}}"
             bindtouchstart="onHsTouchStart" catchtouchmove="onHsTouchMove" bindtouchend="onHsTouchEnd">
         <text wx:if="{{hotspotDebug}}" class="hotspot-label">其他→小语种(1)</text>
+        <view wx:if="{{hotspotDebug}}" class="hotspot-resize" data-id="other1" bindtouchstart="onHsResizeStart" catchtouchmove="onHsResizeMove" bindtouchend="onHsResizeEnd"></view>
       </view>
       <view class="hotspot hs-other2 {{hotspotDebug ? 'debug' : ''}}"
             bindtap="onLangTap" data-key="other"
@@ -43,6 +49,24 @@
             style="{{hotspotDebug ? ('left:'+hsPos.other2.left+'%;top:'+hsPos.other2.top+'%;width:'+hsPos.other2.width+'%;height:'+hsPos.other2.height+'%;') : ''}}"
             bindtouchstart="onHsTouchStart" catchtouchmove="onHsTouchMove" bindtouchend="onHsTouchEnd">
         <text wx:if="{{hotspotDebug}}" class="hotspot-label">其他→小语种(2)</text>
+        <view wx:if="{{hotspotDebug}}" class="hotspot-resize" data-id="other2" bindtouchstart="onHsResizeStart" catchtouchmove="onHsResizeMove" bindtouchend="onHsResizeEnd"></view>
+      </view>
+      <!-- 新增：两个“小语种”跳转热点 other3/other4 -->
+      <view class="hotspot hs-other3 {{hotspotDebug ? 'debug' : ''}}"
+            bindtap="onLangTap" data-key="other"
+            data-id="other3"
+            style="{{hotspotDebug ? ('left:'+hsPos.other3.left+'%;top:'+hsPos.other3.top+'%;width:'+hsPos.other3.width+'%;height:'+hsPos.other3.height+'%;') : ''}}"
+            bindtouchstart="onHsTouchStart" catchtouchmove="onHsTouchMove" bindtouchend="onHsTouchEnd">
+        <text wx:if="{{hotspotDebug}}" class="hotspot-label">其他→小语种(3)</text>
+        <view wx:if="{{hotspotDebug}}" class="hotspot-resize" data-id="other3" bindtouchstart="onHsResizeStart" catchtouchmove="onHsResizeMove" bindtouchend="onHsResizeEnd"></view>
+      </view>
+      <view class="hotspot hs-other4 {{hotspotDebug ? 'debug' : ''}}"
+            bindtap="onLangTap" data-key="other"
+            data-id="other4"
+            style="{{hotspotDebug ? ('left:'+hsPos.other4.left+'%;top:'+hsPos.other4.top+'%;width:'+hsPos.other4.width+'%;height:'+hsPos.other4.height+'%;') : ''}}"
+            bindtouchstart="onHsTouchStart" catchtouchmove="onHsTouchMove" bindtouchend="onHsTouchEnd">
+        <text wx:if="{{hotspotDebug}}" class="hotspot-label">其他→小语种(4)</text>
+        <view wx:if="{{hotspotDebug}}" class="hotspot-resize" data-id="other4" bindtouchstart="onHsResizeStart" catchtouchmove="onHsResizeMove" bindtouchend="onHsResizeEnd"></view>
       </view>
       <!-- 分类热点：汉语/英语/小语种/主题/志愿 -->
       <view class="hotspot hs-cat-cn {{hotspotDebug ? 'debug' : ''}}"
@@ -51,6 +75,7 @@
             style="{{hotspotDebug ? ('left:'+hsPos['汉语'].left+'%;top:'+hsPos['汉语'].top+'%;width:'+hsPos['汉语'].width+'%;height:'+hsPos['汉语'].height+'%;') : ''}}"
             bindtouchstart="onHsTouchStart" catchtouchmove="onHsTouchMove" bindtouchend="onHsTouchEnd">
         <text wx:if="{{hotspotDebug}}" class="hotspot-label">汉语</text>
+        <view wx:if="{{hotspotDebug}}" class="hotspot-resize" data-id="汉语" bindtouchstart="onHsResizeStart" catchtouchmove="onHsResizeMove" bindtouchend="onHsResizeEnd"></view>
       </view>
       <view class="hotspot hs-cat-en {{hotspotDebug ? 'debug' : ''}}"
             bindtap="onCategoryTap" data-cat="英语"
@@ -58,6 +83,7 @@
             style="{{hotspotDebug ? ('left:'+hsPos['英语'].left+'%;top:'+hsPos['英语'].top+'%;width:'+hsPos['英语'].width+'%;height:'+hsPos['英语'].height+'%;') : ''}}"
             bindtouchstart="onHsTouchStart" catchtouchmove="onHsTouchMove" bindtouchend="onHsTouchEnd">
         <text wx:if="{{hotspotDebug}}" class="hotspot-label">英语</text>
+        <view wx:if="{{hotspotDebug}}" class="hotspot-resize" data-id="英语" bindtouchstart="onHsResizeStart" catchtouchmove="onHsResizeMove" bindtouchend="onHsResizeEnd"></view>
       </view>
       <view class="hotspot hs-cat-minor {{hotspotDebug ? 'debug' : ''}}"
             bindtap="onCategoryTap" data-cat="小语种"
@@ -65,6 +91,7 @@
             style="{{hotspotDebug ? ('left:'+hsPos['小语种'].left+'%;top:'+hsPos['小语种'].top+'%;width:'+hsPos['小语种'].width+'%;height:'+hsPos['小语种'].height+'%;') : ''}}"
             bindtouchstart="onHsTouchStart" catchtouchmove="onHsTouchMove" bindtouchend="onHsTouchEnd">
         <text wx:if="{{hotspotDebug}}" class="hotspot-label">小语种</text>
+        <view wx:if="{{hotspotDebug}}" class="hotspot-resize" data-id="小语种" bindtouchstart="onHsResizeStart" catchtouchmove="onHsResizeMove" bindtouchend="onHsResizeEnd"></view>
       </view>
       <view class="hotspot hs-cat-theme {{hotspotDebug ? 'debug' : ''}}"
             bindtap="onCategoryTap" data-cat="主题"
@@ -72,6 +99,7 @@
             style="{{hotspotDebug ? ('left:'+hsPos['主题'].left+'%;top:'+hsPos['主题'].top+'%;width:'+hsPos['主题'].width+'%;height:'+hsPos['主题'].height+'%;') : ''}}"
             bindtouchstart="onHsTouchStart" catchtouchmove="onHsTouchMove" bindtouchend="onHsTouchEnd">
         <text wx:if="{{hotspotDebug}}" class="hotspot-label">主题活动</text>
+        <view wx:if="{{hotspotDebug}}" class="hotspot-resize" data-id="主题" bindtouchstart="onHsResizeStart" catchtouchmove="onHsResizeMove" bindtouchend="onHsResizeEnd"></view>
       </view>
       <view class="hotspot hs-cat-volunteer {{hotspotDebug ? 'debug' : ''}}"
             bindtap="onCategoryTap" data-cat="志愿"
@@ -79,6 +107,7 @@
             style="{{hotspotDebug ? ('left:'+hsPos['志愿'].left+'%;top:'+hsPos['志愿'].top+'%;width:'+hsPos['志愿'].width+'%;height:'+hsPos['志愿'].height+'%;') : ''}}"
             bindtouchstart="onHsTouchStart" catchtouchmove="onHsTouchMove" bindtouchend="onHsTouchEnd">
         <text wx:if="{{hotspotDebug}}" class="hotspot-label">志愿活动</text>
+        <view wx:if="{{hotspotDebug}}" class="hotspot-resize" data-id="志愿" bindtouchstart="onHsResizeStart" catchtouchmove="onHsResizeMove" bindtouchend="onHsResizeEnd"></view>
       </view>
     </view>
   </view>
@@ -90,7 +119,7 @@
       <text class="tab-label">来玩</text>
     </view>
     <view class="tab-item" bindtap="goMine" data-key="mine">
-      <image class="tab-icon" src="../../assets/tab_mine_48.png" mode="aspectFit" />
+      <image class="tab-icon" src="/assets/tab_mine_48.png" mode="aspectFit" />
       <text class="tab-label">我的</text>
     </view>
   </view>

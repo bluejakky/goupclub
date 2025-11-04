@@ -13,7 +13,7 @@
   <view class="filters">
     <view class="filter">
       <text class="filter-label">方向</text>
-      <radio-group class="radio-group" data-key="direction" bindchange="onFilterChange">
+      <radio-group class="radio-group direction-group" data-key="direction" bindchange="onFilterChange">
         <label class="radio-item">
           <radio value="all" checked="{{filter.direction==='all'}}"/> 全部
         </label>
@@ -28,7 +28,7 @@
 
     <view class="filter">
       <text class="filter-label">类型</text>
-      <radio-group class="radio-group" data-key="type" bindchange="onFilterChange">
+      <radio-group class="radio-group type-group" data-key="type" bindchange="onFilterChange">
         <label class="radio-item">
           <radio value="all" checked="{{filter.type==='all'}}"/> 全部
         </label>
@@ -46,7 +46,7 @@
 
     <view class="filter">
       <text class="filter-label">时间</text>
-      <radio-group class="radio-group" data-key="days" bindchange="onFilterChange">
+      <radio-group class="radio-group days-group" data-key="days" bindchange="onFilterChange">
         <label class="radio-item">
           <radio value="7" checked="{{String(filter.days)==='7'}}"/> 7天
         </label>
