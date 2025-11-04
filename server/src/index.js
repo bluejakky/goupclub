@@ -556,7 +556,7 @@ app.post('/api/activities', async (req, res) => {
     const publishedAt = ndt(a.publishedAt);
     const result = await query(
       'INSERT INTO activities (title, start, end, place, lat, lng, categoryIds, groupTags, min, max, waitlist, enrolled, price, status, isTop, isHot, publishedAt, mainImage, images, content) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)',
-      [a.title, start, end, a.place, a.lat ?? null, a.lng ?? null, JSON.stringify(a.categoryIds || []), JSON.stringify(a.groups || []), a.min || 0, a.max || 1, a.waitlist || 0, a.enrolled || 0, a.price || 0, a.status || '草稿', a.isTop ? 1 : 0, a.isHot ? 1 : 0, publishedAt, a.mainImage || '', JSON.stringify(a.images || []), a.content || '']
+      [String(a.title || '').trim(), start, end, a.place ?? null, a.lat ?? null, a.lng ?? null, JSON.stringify(a.categoryIds || []), JSON.stringify(a.groups || []), a.min || 0, a.max || 1, a.waitlist || 0, a.enrolled || 0, a.price || 0, a.status || '草稿', a.isTop ? 1 : 0, a.isHot ? 1 : 0, publishedAt, a.mainImage ?? null, JSON.stringify(a.images || []), a.content ?? null]
     );
     res.json({ id: result.insertId, ...a });
   } catch (e) {
@@ -581,7 +581,7 @@ app.put('/api/activities/:id', async (req, res) => {
     const publishedAt = ndt(a.publishedAt);
     await query(
       'UPDATE activities SET title=?, start=?, end=?, place=?, lat=?, lng=?, categoryIds=?, groupTags=?, min=?, max=?, waitlist=?, enrolled=?, price=?, status=?, isTop=?, isHot=?, publishedAt=?, mainImage=?, images=?, content=? WHERE id=?',
-      [a.title, start, end, a.place, a.lat ?? null, a.lng ?? null, JSON.stringify(a.categoryIds || []), JSON.stringify(a.groups || []), a.min || 0, a.max || 1, a.waitlist || 0, a.enrolled || 0, a.price || 0, a.status || '草稿', a.isTop ? 1 : 0, a.isHot ? 1 : 0, publishedAt, a.mainImage || '', JSON.stringify(a.images || []), a.content || '', id]
+      [String(a.title || '').trim(), start, end, a.place ?? null, a.lat ?? null, a.lng ?? null, JSON.stringify(a.categoryIds || []), JSON.stringify(a.groups || []), a.min || 0, a.max || 1, a.waitlist || 0, a.enrolled || 0, a.price || 0, a.status || '草稿', a.isTop ? 1 : 0, a.isHot ? 1 : 0, publishedAt, a.mainImage ?? null, JSON.stringify(a.images || []), a.content ?? null, id]
     );
     const rows = await query(
       'SELECT id, title, start, end, place, lat, lng, categoryIds, groupTags AS `groups`, min, max, waitlist, enrolled, price, status, isTop, isHot, publishedAt, mainImage, images, content FROM activities WHERE id = ?',
