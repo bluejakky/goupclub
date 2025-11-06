@@ -38,7 +38,9 @@ Page({
     wx.showLoading({ title: '加载活动' })
     try {
       const rows = await api.getPublishedActivities({ upcomingOnly: true })
-      const items = Array.isArray(rows) ? rows : (Array.isArray(rows?.items) ? rows.items : [])
+      const items0 = Array.isArray(rows) ? rows : (Array.isArray(rows?.items) ? rows.items : [])
+      // 双保险：客户端也过滤仅“已发布”
+      const items = items0.filter(a => /^(published|已发布)$/i.test(String(a.status || '').trim()))
       const adapt = (a) => {
         let images = []
         try {
@@ -59,6 +61,7 @@ Page({
           isTop: !!a.isTop,
           isHot: !!a.isHot,
           publishedAt: a.publishedAt || '',
+          status: a.status || '',
           mainImage: a.mainImage || '',
           images,
           flags: []
