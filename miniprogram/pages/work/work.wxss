@@ -38,6 +38,8 @@
 .signup-row { display: flex; align-items: center; justify-content: space-between; padding: 8rpx 12rpx 24rpx; }
 .flags { display: flex; align-items: center; gap: 6rpx; }
 .flag { width: 36rpx; height: 36rpx; line-height: 36rpx; text-align: center; border-radius: 50%; background: #f3f4f6; font-size: 22rpx; }
+.flag-icon { width: 28rpx; height: 28rpx; border-radius: 50%; }
+.signup-status { display: flex; align-items: center; gap: 10rpx; }
 .signup-count { color: #0ea5e9; font-size: 24rpx; }
 .detail-btn { background: #7c3aed; color: #fff; padding: 8rpx 16rpx; border-radius: 10rpx; font-size: 24rpx; }
 .detail-btn:active { opacity: 0.9; }

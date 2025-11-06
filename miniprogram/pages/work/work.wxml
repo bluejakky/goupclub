@@ -30,7 +30,6 @@
     <view class="dropdown" catchtap="noop">
       <view class="dropdown-trigger" bindtap="toggleType">
         <text class="dropdown-label">{{selectedType || '选择类型'}}</text>
-
       </view>
       <view wx:if="{{isTypeOpen}}" class="dropdown-list" catchtap="noop">
         <block wx:for="{{typeOptions}}" wx:key="index">
@@ -61,13 +60,15 @@
             <view class="meta-right">{{item.startDisplay}}</view>
           </view>
           <view class="signup-row">
--            <view class="flags">
--              <block wx:for="{{item.flags}}" wx:key="index">
--                <text class="flag">{{item}}</text>
--              </block>
--            </view>
-             <view class="signup-count">已报名 {{item.signed}}/{{item.max}}</view>
-             <view class="detail-btn" bindtap="onTap" data-id="{{item.id}}">活动详情</view>
+            <view class="signup-status">
+              <view class="flags">
+                <block wx:for="{{item.flagIcons}}" wx:key="index">
+                  <image class="flag-icon" src="{{item}}" mode="aspectFill" />
+                </block>
+              </view>
+              <view class="signup-count">已报名 {{item.signed}}/{{item.max}}</view>
+            </view>
+            <view class="detail-btn" bindtap="onTap" data-id="{{item.id}}">活动详情</view>
           </view>
         </view>
       </block>

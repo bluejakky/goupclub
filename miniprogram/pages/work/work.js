@@ -3,11 +3,11 @@ const { BASE_URL } = require('../../utils/request.js')
 const { formatDateTime } = require('../../utils/ui.js')
 const ASSET_HOST = String(BASE_URL || '').replace(/\/api$/, '')
 const normalizeAssetUrl = (u) => {
-  if (!u) return '';
-  const s = String(u).trim();
-  if (/^https?:\/\//i.test(s)) return s;
-  if (s.startsWith('/')) return `${ASSET_HOST}${s}`;
-  return `${ASSET_HOST}/${s}`;
+  if (!u) return ''
+  const s = String(u).trim()
+  if (/^https?:\/\//i.test(s)) return s
+  if (s.startsWith('/')) return `${ASSET_HOST}${s}`
+  return `${ASSET_HOST}/${s}`
 }
 Page({
   data: {
@@ -27,10 +27,10 @@ Page({
   },
   onLoad() {
     try {
-      const sys = wx.getSystemInfoSync();
-      const statusBarHeight = sys.statusBarHeight || 20;
-      const navHeight = statusBarHeight + 44;
-      this.setData({ statusBarHeight, navHeight });
+      const sys = wx.getSystemInfoSync()
+      const statusBarHeight = sys.statusBarHeight || 20
+      const navHeight = statusBarHeight + 44
+      this.setData({ statusBarHeight, navHeight })
     } catch (_) {}
     this.loadActivities()
   },
@@ -73,6 +73,35 @@ Page({
         try {
           groups = Array.isArray(a.groups) ? a.groups : (a.groups ? JSON.parse(a.groups) : [])
         } catch (_) {}
+        const toFlagIcon = (g) => {
+          const t = String(g || '').trim()
+          switch (t) {
+            case '中国人':
+            case '中国':
+            case '汉语':
+              return '../../assets/nihao.png'
+            case '外国人':
+            case '英语':
+              return '../../assets/hello.png'
+            case '法语':
+              return '../../assets/french.png'
+            case '德语':
+              return '../../assets/germen.png'
+            case '西班牙语':
+              return '../../assets/spanish.png'
+            case '俄语':
+              return '../../assets/russian.png'
+            case '日语':
+              return '../../assets/japanese.png'
+            case '韩语':
+              return '../../assets/korean.png'
+            case '阿拉伯语':
+              return '../../assets/arabic.png'
+            default:
+              return null
+          }
+        }
+        const flagIcons = (Array.isArray(groups) ? groups.map(toFlagIcon).filter(Boolean) : [])
         return {
           id: a.id,
           title: a.title || '',
@@ -86,6 +115,7 @@ Page({
           signed: Number(a.enrolled || 0),
           max: Number(a.max || 0),
           flags: Array.isArray(groups) ? groups : [],
+          flagIcons,
           startDisplay: formatDateTime(start)
         }
       }
