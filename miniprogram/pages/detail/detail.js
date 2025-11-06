@@ -83,7 +83,24 @@ Page({
           images = Array.isArray(a.images) ? a.images : (a.images ? JSON.parse(a.images) : [])
         } catch (_) {}
         images = (Array.isArray(images) ? images : []).map(normalizeAssetUrl)
-        const flags2 = Array.isArray(a.groups) ? a.groups.filter((f, i, arr) => arr.indexOf(f) === i) : flags
+        let groupsParsed = []
+        try {
+          groupsParsed = Array.isArray(a.groups) ? a.groups : (a.groups ? JSON.parse(a.groups) : [])
+        } catch (_) {}
+        const flags2 = Array.isArray(groupsParsed) ? groupsParsed.filter((f, i, arr) => arr.indexOf(f) === i) : flags
+        let contentArr = []
+        try {
+          if (Array.isArray(a.content)) {
+            contentArr = a.content
+          } else if (typeof a.content === 'string') {
+            const s = a.content.trim()
+            if (s.startsWith('[') && s.endsWith(']')) {
+              contentArr = JSON.parse(s)
+            } else {
+              contentArr = [a.content]
+            }
+          }
+        } catch (_) {}
         const fresh = {
           images: images.length ? images : this.data.detail.images,
           title: a.title || this.data.detail.title,
@@ -99,7 +116,7 @@ Page({
           flags: flags2,
           price: Number(a.price ?? this.data.detail.price),
           status: a.status || this.data.detail.status,
-          content: Array.isArray(a.content) ? a.content : (typeof a.content === 'string' ? [a.content] : this.data.detail.content)
+          content: contentArr.length ? contentArr : this.data.detail.content
         }
         this.setData({ detail: fresh, hasRealData: true })
         try { wx.setStorageSync('lastActivityDetail', { ...a, images }) } catch (_) {}

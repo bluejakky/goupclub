@@ -38,8 +38,12 @@ Page({
     this.loadActivities(true)
   },
   onTap(e) {
-    const id = e?.currentTarget?.dataset?.id
-    if (!id) return
+    const id = Number(e?.currentTarget?.dataset?.id)
+    if (!Number.isFinite(id) || id <= 0) return
+    const item = (this.data.activities || []).find(x => Number(x.id) === id)
+    if (item) {
+      try { wx.setStorageSync('lastActivityDetail', item) } catch (_) {}
+    }
     wx.navigateTo({ url: `/pages/detail/detail?id=${id}` })
   },
   // 顶部交互方法占位，避免事件未定义错误
@@ -65,6 +69,10 @@ Page({
         images = (Array.isArray(images) ? images : []).map(normalizeAssetUrl)
         const main = normalizeAssetUrl(a.mainImage || (images[0] || ''))
         const start = a.start || ''
+        let groups = []
+        try {
+          groups = Array.isArray(a.groups) ? a.groups : (a.groups ? JSON.parse(a.groups) : [])
+        } catch (_) {}
         return {
           id: a.id,
           title: a.title || '',
@@ -77,7 +85,7 @@ Page({
           status: a.status || '',
           signed: Number(a.enrolled || 0),
           max: Number(a.max || 0),
-          flags: Array.isArray(a.groups) ? a.groups : [],
+          flags: Array.isArray(groups) ? groups : [],
           startDisplay: formatDateTime(start)
         }
       }
