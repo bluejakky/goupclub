@@ -1,4 +1,13 @@
 const api = require('../../utils/api.js')
+const { BASE_URL } = require('../../utils/request.js')
+const ASSET_HOST = String(BASE_URL || '').replace(/\/api$/, '')
+const normalizeAssetUrl = (u) => {
+  if (!u) return '';
+  const s = String(u).trim();
+  if (/^https?:\/\//i.test(s)) return s;
+  if (s.startsWith('/')) return `${ASSET_HOST}${s}`;
+  return `${ASSET_HOST}/${s}`;
+}
 Page({
   data: {
     id: null,
@@ -30,8 +39,13 @@ Page({
     try {
       cached = wx.getStorageSync('lastActivityDetail') || null;
       if (cached && (cached.title || cached.mainImage)) {
+        let imgs = [];
+        try {
+          imgs = Array.isArray(cached.images) && cached.images.length ? cached.images : (cached.mainImage ? [cached.mainImage] : detail.images);
+        } catch (_) {}
+        imgs = (Array.isArray(imgs) ? imgs : []).map(normalizeAssetUrl);
         detail = {
-          images: Array.isArray(cached.images) && cached.images.length ? cached.images : (cached.mainImage ? [cached.mainImage] : detail.images),
+          images: imgs,
           title: cached.title || detail.title,
           hot: !!cached.isHot,
           top: !!cached.isTop,
@@ -63,6 +77,7 @@ Page({
         try {
           images = Array.isArray(a.images) ? a.images : (a.images ? JSON.parse(a.images) : [])
         } catch (_) {}
+        images = (Array.isArray(images) ? images : []).map(normalizeAssetUrl)
         const flags2 = Array.isArray(a.groups) ? a.groups.filter((f, i, arr) => arr.indexOf(f) === i) : flags
         const fresh = {
           images: images.length ? images : this.data.detail.images,
