@@ -132,6 +132,6 @@ module.exports = {
   },
   // 查询提交次数与提交申请
   async getActivityById(id) {
-    return request({ url: `/activities/${id}`, method: 'GET' })
+    return request({ url: `/activities/${id}`, method: 'GET', silent: true })
   },
 }

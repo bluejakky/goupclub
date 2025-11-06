@@ -82,7 +82,16 @@ Page({
         this.setData({ detail: fresh, hasRealData: true })
         try { wx.setStorageSync('lastActivityDetail', { ...a, images }) } catch (_) {}
         this.updateCTA()
-      }).catch(() => {}).finally(() => wx.hideLoading())
+      }).catch((err) => {
+        const msg = String(err && err.message || '')
+        if (msg.includes('404')) {
+          wx.showToast({ title: '活动不存在或已下线', icon: 'none' })
+        } else {
+          wx.showToast({ title: '加载失败，请稍后重试', icon: 'none' })
+        }
+        // 失败时禁用报名，保留缓存展示
+        this.setData({ applyDisabled: true, ctaText: '活动已下线' })
+      }).finally(() => wx.hideLoading())
     }
   },
   updateCTA() {

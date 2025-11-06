@@ -9,7 +9,7 @@ const BASE_URL = (() => {
   }
 })()
 
-function request({ url, method = 'GET', data = {}, header = {} }) {
+function request({ url, method = 'GET', data = {}, header = {}, silent = false }) {
   return new Promise((resolve, reject) => {
     const token = wx.getStorageSync('token')
     const headers = { 'Content-Type': 'application/json', 'X-Client': 'miniprogram', ...header }
@@ -24,18 +24,18 @@ function request({ url, method = 'GET', data = {}, header = {} }) {
         if (statusCode === 200) return resolve(data)
         if (statusCode === 401) {
           wx.removeStorageSync('token')
-          wx.showToast({ title: '登录状态已过期，请重新登录', icon: 'none' })
+          if (!silent) wx.showToast({ title: '登录状态已过期，请重新登录', icon: 'none' })
           setTimeout(() => {
             wx.navigateTo({ url: '/pages/login/login' })
           }, 300)
           return reject(new Error('unauthorized'))
         }
         const msg = (data && (data.error || data.message)) || `请求失败(${statusCode})`
-        wx.showToast({ title: String(msg), icon: 'none' })
+        if (!silent) wx.showToast({ title: String(msg), icon: 'none' })
         reject(new Error(msg))
       },
       fail(err) {
-        wx.showToast({ title: '网络错误，请稍后重试', icon: 'none' })
+        if (!silent) wx.showToast({ title: '网络错误，请稍后重试', icon: 'none' })
         reject(err)
       }
     })
