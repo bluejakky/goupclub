@@ -61,13 +61,13 @@
             <view class="meta-right">{{item.startDisplay}}</view>
           </view>
           <view class="signup-row">
-            <view class="flags">
-              <block wx:for="{{item.flags}}" wx:key="index">
-                <text class="flag">{{item}}</text>
-              </block>
-            </view>
-            <view class="signup-count">已报名 {{item.signed}}/{{item.max}}</view>
-            <view class="detail-btn" bindtap="onTap" data-id="{{item.id}}">活动详情</view>
+-            <view class="flags">
+-              <block wx:for="{{item.flags}}" wx:key="index">
+-                <text class="flag">{{item}}</text>
+-              </block>
+-            </view>
+             <view class="signup-count">已报名 {{item.signed}}/{{item.max}}</view>
+             <view class="detail-btn" bindtap="onTap" data-id="{{item.id}}">活动详情</view>
           </view>
         </view>
       </block>
