@@ -12,7 +12,7 @@ const BASE_URL = (() => {
 function request({ url, method = 'GET', data = {}, header = {} }) {
   return new Promise((resolve, reject) => {
     const token = wx.getStorageSync('token')
-    const headers = { 'Content-Type': 'application/json', ...header }
+    const headers = { 'Content-Type': 'application/json', 'X-Client': 'miniprogram', ...header }
     if (token) headers['Authorization'] = `Bearer ${token}`
     wx.request({
       url: `${BASE_URL}${url.startsWith('/') ? url : '/' + url}`,

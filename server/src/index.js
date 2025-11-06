@@ -696,9 +696,15 @@ app.get('/api/activities', async (req, res) => {
       where.push('(title LIKE ? OR place LIKE ? OR content LIKE ?)');
       params.push(kw, kw, kw);
     }
-    if (statusParam && String(statusParam).trim()) {
+    // 默认规则：小程序请求头 X-Client:miniprogram 且未传 status 时，强制仅返回“已发布”
+    const clientHeader = String(req.headers['x-client'] || '').trim().toLowerCase();
+    let st = statusParam;
+    if ((!st || !String(st).trim()) && clientHeader === 'miniprogram') {
+      st = '已发布';
+    }
+    if (st && String(st).trim()) {
       // 支持英文 published 与中文 已发布 两种取值
-      const norm = /^(published|已发布)$/i.test(String(statusParam).trim()) ? '已发布' : String(statusParam).trim();
+      const norm = /^(published|已发布)$/i.test(String(st).trim()) ? '已发布' : String(st).trim();
       where.push('status = ?');
       params.push(norm);
     }

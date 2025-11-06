@@ -34,7 +34,8 @@ Page({
     }
     this.setData({ searching: true });
     wx.showToast({ title: '搜索中', icon: 'none' });
-    api.searchActivities({ keyword: kw })
+    // 仅检索已发布活动，避免展示草稿/下线等状态
+    api.getPublishedActivities({ keyword: kw, upcomingOnly: 1 })
       .then(list => {
         const items = Array.isArray(list) ? list : (Array.isArray(list?.items) ? list.items : []);
         this.setData({ searchResults: items, searching: false });
