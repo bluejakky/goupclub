@@ -722,6 +722,20 @@ app.get('/api/activities', async (req, res) => {
     res.status(500).json({ error: e.message });
   }
 });
+app.get('/api/activities/:id', async (req, res) => {
+  try {
+    const id = Number(req.params.id);
+    if (!Number.isFinite(id) || id <= 0) return res.status(400).json({ error: 'invalid id' });
+    const rows = await query(
+      'SELECT id, title, start, end, place, lat, lng, categoryIds, groupTags AS `groups`, min, max, waitlist, enrolled, price, status, isTop, isHot, publishedAt, mainImage, images, content FROM activities WHERE id = ?',
+      [id]
+    );
+    if (!rows[0]) return res.status(404).json({ error: 'not found' });
+    res.json(rows[0]);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
 app.post('/api/activities', async (req, res) => {
   const a = req.body || {};
   try {

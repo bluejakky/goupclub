@@ -1,3 +1,4 @@
+const api = require('../../utils/api.js')
 Page({
   data: {
     id: null,
@@ -54,6 +55,35 @@ Page({
     try {
       wx.showShareMenu({ withShareTicket: true, menus: ['shareAppMessage', 'shareTimeline'] });
     } catch (_) {}
+    // 拉取最新详情，覆盖缓存，确保后台修改能反映
+    if (id) {
+      wx.showLoading({ title: '加载详情' })
+      api.getActivityById(id).then(a => {
+        let images = []
+        try {
+          images = Array.isArray(a.images) ? a.images : (a.images ? JSON.parse(a.images) : [])
+        } catch (_) {}
+        const flags2 = Array.isArray(a.groups) ? a.groups.filter((f, i, arr) => arr.indexOf(f) === i) : flags
+        const fresh = {
+          images: images.length ? images : this.data.detail.images,
+          title: a.title || this.data.detail.title,
+          hot: !!a.isHot,
+          top: !!a.isTop,
+          start: a.start || this.data.detail.start,
+          end: a.end || this.data.detail.end,
+          place: a.place || this.data.detail.place,
+          signed: Number(a.enrolled ?? this.data.detail.signed),
+          max: Number(a.max ?? this.data.detail.max),
+          flags: flags2,
+          price: Number(a.price ?? this.data.detail.price),
+          status: a.status || this.data.detail.status,
+          content: Array.isArray(a.content) ? a.content : (typeof a.content === 'string' ? [a.content] : this.data.detail.content)
+        }
+        this.setData({ detail: fresh, hasRealData: true })
+        try { wx.setStorageSync('lastActivityDetail', { ...a, images }) } catch (_) {}
+        this.updateCTA()
+      }).catch(() => {}).finally(() => wx.hideLoading())
+    }
   },
   updateCTA() {
     const { detail } = this.data;
