@@ -1,3 +1,5 @@
+const api = require('../../utils/api.js')
+
 Page({
   data: {
     statusBarHeight: 20,
@@ -22,79 +24,71 @@ Page({
       { name: '志愿' },
       { name: '主题' }
     ],
-    activities: [
-      {
-        id: 1,
-        title: '英语角交流',
-        category: '英语',
-        start: '2025-10-10 19:00',
-        end: '2025-10-10 21:00',
-        place: '市图书馆',
-        signed: 12,
-        max: 20,
-        price: 20,
-        isTop: true,
-        isHot: true,
-        publishedAt: '2025-10-01 12:00',
-        mainImage: 'https://picsum.photos/400/225?random=1',
-        images: ['https://picsum.photos/800/450?random=11'],
-        flags: ['🇬🇧','🇺🇸','🇨🇦','🇨🇳','🇦🇺']
-      },
-      {
-        id: 2,
-        title: '志愿者公园清洁',
-        category: '志愿',
-        start: '2025-10-12 09:00',
-        end: '2025-10-12 12:00',
-        place: '城市公园',
-        signed: 35,
-        max: 50,
-        price: 0,
-        isTop: false,
-        isHot: true,
-        publishedAt: '2025-10-05 08:00',
-        mainImage: 'https://picsum.photos/400/225?random=2',
-        images: ['https://picsum.photos/800/450?random=12'],
-        flags: ['🇨🇳','🇨🇳','🇨🇳','🇭🇰','🇲🇴']
-      },
-      {
-        id: 3,
-        title: '西班牙语学习分享',
-        category: '小语种',
-        start: '2025-10-15 19:00',
-        end: '2025-10-15 21:00',
-        place: '社区活动室',
-        signed: 8,
-        max: 25,
-        price: 10,
-        isTop: false,
-        isHot: false,
-        publishedAt: '2025-10-07 18:30',
-        mainImage: 'https://picsum.photos/400/225?random=3',
-        images: ['https://picsum.photos/800/450?random=13'],
-        flags: ['🇪🇸','🇲🇽','🇨🇴','🇦🇷']
-      }
-    ]
+    activities: []
   },
-  onLoad() {
+  async onLoad() {
     const sys = wx.getSystemInfoSync()
     const statusBarHeight = sys.statusBarHeight || 20
     const navHeight = statusBarHeight + 44
     this.setData({ statusBarHeight, navHeight })
-    // 排序：置顶优先，其次按发布时间倒序，其次按开始时间
-    const sorted = [...this.data.activities].sort((a, b) => {
-      if ((a.isTop ? 1 : 0) !== (b.isTop ? 1 : 0)) return (b.isTop ? 1 : 0) - (a.isTop ? 1 : 0);
-      const ap = a.publishedAt || a.start || '';
-      const bp = b.publishedAt || b.start || '';
-      return bp.localeCompare(ap);
-    });
-    // 去重国旗，避免重复显示
-    const deduped = sorted.map(a => ({
-      ...a,
-      flags: Array.isArray(a.flags) ? a.flags.filter((f, i, arr) => arr.indexOf(f) === i) : []
-    }));
-    this.setData({ activities: deduped, fullActivities: deduped });
+    await this.loadActivities()
     wx.showShareMenu({ withShareTicket: true, menus: ['shareAppMessage','shareTimeline'] });
+  },
+  async loadActivities() {
+    wx.showLoading({ title: '加载活动' })
+    try {
+      const rows = await api.getPublishedActivities({ upcomingOnly: true })
+      const items = Array.isArray(rows) ? rows : (Array.isArray(rows?.items) ? rows.items : [])
+      const adapt = (a) => {
+        let images = []
+        try {
+          images = Array.isArray(a.images) ? a.images : (a.images ? JSON.parse(a.images) : [])
+        } catch (_) {}
+        const groups = Array.isArray(a.groups) ? a.groups : []
+        const catPick = groups.find(g => ['汉语','英语','小语种','志愿','主题'].includes(String(g))) || ''
+        return {
+          id: a.id,
+          title: a.title,
+          category: catPick || '',
+          start: a.start,
+          end: a.end,
+          place: a.place,
+          signed: Number(a.enrolled || 0),
+          max: Number(a.max || 0),
+          price: Number(a.price || 0),
+          isTop: !!a.isTop,
+          isHot: !!a.isHot,
+          publishedAt: a.publishedAt || '',
+          mainImage: a.mainImage || '',
+          images,
+          flags: []
+        }
+      }
+      const sorted = items.map(adapt).sort((a, b) => {
+        if ((a.isTop ? 1 : 0) !== (b.isTop ? 1 : 0)) return (b.isTop ? 1 : 0) - (a.isTop ? 1 : 0)
+        const ap = a.publishedAt || a.start || ''
+        const bp = b.publishedAt || b.start || ''
+        return bp.localeCompare(ap)
+      })
+      this.setData({ activities: sorted, fullActivities: sorted })
+    } catch (e) {
+      wx.showToast({ title: '加载失败，显示示例数据', icon: 'none' })
+      // 回退：示例数据，避免空白
+      const fallback = [
+        { id: 1, title: '英语角交流', category: '英语', start: '2025-10-10 19:00', end: '2025-10-10 21:00', place: '市图书馆', signed: 12, max: 20, price: 20, isTop: true, isHot: true, publishedAt: '2025-10-01 12:00', mainImage: 'https://picsum.photos/400/225?random=1', images: ['https://picsum.photos/800/450?random=11'], flags: ['🇬🇧','🇺🇸','🇨🇦','🇨🇳','🇦🇺'] },
+        { id: 2, title: '志愿者公园清洁', category: '志愿', start: '2025-10-12 09:00', end: '2025-10-12 12:00', place: '城市公园', signed: 35, max: 50, price: 0, isTop: false, isHot: true, publishedAt: '2025-10-05 08:00', mainImage: 'https://picsum.photos/400/225?random=2', images: ['https://picsum.photos/800/450?random=12'], flags: ['🇨🇳','🇨🇳','🇨🇳','🇭🇰','🇲🇴'] },
+        { id: 3, title: '西班牙语学习分享', category: '小语种', start: '2025-10-15 19:00', end: '2025-10-15 21:00', place: '社区活动室', signed: 8, max: 25, price: 10, isTop: false, isHot: false, publishedAt: '2025-10-07 18:30', mainImage: 'https://picsum.photos/400/225?random=3', images: ['https://picsum.photos/800/450?random=13'], flags: ['🇪🇸','🇲🇽','🇨🇴','🇦🇷'] }
+      ]
+      const sorted = fallback.sort((a, b) => {
+        if ((a.isTop ? 1 : 0) !== (b.isTop ? 1 : 0)) return (b.isTop ? 1 : 0) - (a.isTop ? 1 : 0)
+        const ap = a.publishedAt || a.start || ''
+        const bp = b.publishedAt || b.start || ''
+        return bp.localeCompare(ap)
+      })
+      this.setData({ activities: sorted, fullActivities: sorted })
+    } finally {
+      wx.hideLoading()
+    }
   },
   onShow() {
     try {

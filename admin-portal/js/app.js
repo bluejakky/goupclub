@@ -10,6 +10,7 @@ createApp({
       setTimeout(() => (notice.value = ''), 2000);
     };
 
+
     // 可切换的后端API层（预留）。切换 useApi 为 true 即走真实接口。
     const api = {
       useApi: ref(false),
@@ -145,15 +146,32 @@ createApp({
     const placeSearchResults = ref([]);
     const placeSearching = ref(false);
     const fullAlertPercent = ref(90);
-    let quillInstance = null;
     let cropper = null;
-    let leafletMap = null;
-    let leafletMarker = null;
-    let searchMarkers = null;
+    // 腾讯地图实例与覆盖物
+    let tmMap = null;
+    let tmMarker = null; // 在 GL 版本中复用为 MultiMarker 图层实例
+    // 已移除 Leaflet 兜底逻辑，专注使用腾讯地图
+    let searchOverlays = [];
+    let tmSearchService = null;
+    let tmGeocoder = null;
+    let searchIdMap = new Map();
     let selectedLatLng = null;
     const selectedResultIndex = ref(-1);
     const clearAlsoSelected = ref(false);
     const pinColors = ['#ef4444','#f59e0b','#10b981','#3b82f6','#8b5cf6','#ec4899','#22d3ee'];
+    // 腾讯地图就绪检测（GL 版）：同时验证构造器能正常实例化
+    const isQQMapReadyForUse = () => {
+      try {
+        if (!(window.__QQMAP_READY__ && window.TMap)) return false;
+        if (typeof TMap.Map !== 'function' || typeof TMap.LatLng !== 'function') return false;
+        const t = new TMap.LatLng(31.2304, 121.4737);
+        if (!t) return false;
+        const ok = !!(t.getLat && t.getLng);
+        return ok;
+      } catch (e) {
+        return false;
+      }
+    };
     // 搜索分页状态
     const placePage = ref(0);
     const pageSize = ref(8);
@@ -223,39 +241,13 @@ createApp({
     };
     const formErrors = Vue.computed(computeFormErrors);
     const isFormValid = Vue.computed(() => Object.keys(formErrors.value).length === 0);
-    const initQuill = () => {
-      const el = document.getElementById('rich-editor');
+    const stripHtml = (html) => {
+      try { return String(html || '').replace(/<\/?(script|style)[^>]*>/gi, '').replace(/<br\s*\/?>(?=\n)/gi, '\n').replace(/<\/(p|div)>/gi, '\n').replace(/<[^>]+>/g, '').replace(/\n{2,}/g, '\n').trim(); } catch { return String(html || ''); }
+    };
+    const initPlainEditor = () => {
+      const el = document.getElementById('plain-editor');
       if (!el) return;
-      if (!quillInstance) {
-        const imageHandler = function () {
-          const input = document.createElement('input');
-          input.type = 'file';
-          input.accept = 'image/*';
-          input.onchange = async () => {
-            const file = input.files && input.files[0];
-            if (!file) return;
-            try {
-              const url = await uploadImage(file);
-              const range = quillInstance.getSelection(true);
-              quillInstance.insertEmbed(range.index, 'image', url, 'user');
-            } catch (err) {
-              console.error('上传图片失败', err);
-              toast('上传图片失败');
-            }
-          };
-          input.click();
-        };
-        quillInstance = new Quill('#rich-editor', {
-          theme: 'snow',
-          modules: {
-            toolbar: { 
-              container: [["bold", "italic", "underline", "strike"], [{ list: "ordered" }, { list: "bullet" }], ["link", "image"]],
-              handlers: { image: imageHandler },
-            },
-          },
-        });
-      }
-      quillInstance.root.innerHTML = activityForm.content || '';
+      el.value = stripHtml(activityForm.content || '');
     };
     const openActivityForm = () => {
       Object.assign(activityForm, {
@@ -263,7 +255,7 @@ createApp({
       });
       editingId.value = null;
       showActivityModal.value = true;
-      Vue.nextTick(() => initQuill());
+      Vue.nextTick(() => { initPlainEditor(); });
     };
     const openEditActivity = (a) => {
       Object.assign(activityForm, JSON.parse(JSON.stringify(a)));
@@ -271,7 +263,7 @@ createApp({
       activityForm.images = Array.isArray(a.images) ? [...a.images] : [];
       editingId.value = a.id;
       showActivityModal.value = true;
-      Vue.nextTick(() => initQuill());
+      Vue.nextTick(() => { initPlainEditor(); });
     };
     const renderCategoryNames = (ids) => {
       return ids.map((id) => {
@@ -310,7 +302,10 @@ createApp({
       payload.enrolled = Number(payload.enrolled || 0);
       payload.lat = (activityForm.lat === null || activityForm.lat === undefined || activityForm.lat === '') ? null : Number(activityForm.lat);
       payload.lng = (activityForm.lng === null || activityForm.lng === undefined || activityForm.lng === '') ? null : Number(activityForm.lng);
-      try { if (quillInstance) payload.content = quillInstance.root.innerHTML || ''; } catch (e) {}
+      // 纯文本内容：直接读取 textarea 值
+      const el = document.getElementById('plain-editor');
+      const txt = el ? el.value || '' : '';
+      payload.content = (String(txt || '').trim()) || null;
       // 统一将可选文本字段的 undefined/空字符串 转为 null，避免后端 SQL 绑定错误
       payload.place = String(payload.place || '').trim() || null;
       payload.mainImage = String(payload.mainImage || '').trim() || null;
@@ -331,6 +326,8 @@ createApp({
             await withRetry(() => api.createActivity(payload));
             toast('活动已创建（后端）');
           }
+          // 成功后刷新后端活动列表，确保新建/更新后的数据立即可见
+          await refreshActivitiesFromApi();
         } catch (e) {
           console.error(e);
           return toast('保存活动失败（已重试）');
@@ -418,163 +415,246 @@ createApp({
         const el = document.getElementById('mapContainer');
         if (!el) return;
         const hasCoord = activityForm.lat != null && activityForm.lng != null;
-        const center = hasCoord ? [activityForm.lat, activityForm.lng] : [31.2304, 121.4737];
-        // 如果地图实例存在但容器已被销毁或替换，重新创建实例
-        try {
-          if (leafletMap && leafletMap._container !== el) {
-            leafletMap.remove();
-            leafletMap = null;
-            leafletMarker = null;
-            searchMarkers = null;
-          }
-        } catch (e) {}
-        if (!leafletMap) {
-          leafletMap = L.map(el).setView(center, 11);
-          L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap' }).addTo(leafletMap);
-          leafletMap.on('click', (e) => {
-            selectedLatLng = e.latlng;
-            if (leafletMarker) {
-              leafletMarker.setLatLng(selectedLatLng);
-              if (leafletMarker.dragging) leafletMarker.dragging.enable();
-            } else {
-              leafletMarker = L.marker(selectedLatLng, { draggable: true }).addTo(leafletMap);
-              leafletMarker.on('dragend', (ev) => {
-                const p = ev.target.getLatLng();
-                selectedLatLng = p;
-              });
-            }
-          });
-          if (hasCoord) {
-            selectedLatLng = { lat: activityForm.lat, lng: activityForm.lng };
-            leafletMarker = L.marker(selectedLatLng, { draggable: true }).addTo(leafletMap);
-            leafletMarker.on('dragend', (ev) => {
-              const p = ev.target.getLatLng();
-              selectedLatLng = p;
-            });
-          }
-        } else {
-          leafletMap.setView(center);
-          leafletMap.invalidateSize();
+        const centerLat = hasCoord ? Number(activityForm.lat) : 31.2304;
+        const centerLng = hasCoord ? Number(activityForm.lng) : 121.4737;
+        // 若腾讯地图不可用或关键构造器缺失，提示并返回（不再使用 Leaflet 兜底）
+        if (!isQQMapReadyForUse()) {
+          toast('腾讯地图未就绪：请检查密钥与域名白名单');
+          return;
         }
-        // 轻微延迟再次刷新尺寸，避免弹窗动画影响初次渲染
-        setTimeout(() => { try { leafletMap && leafletMap.invalidateSize(); } catch (e) {} }, 200);
+        // 腾讯地图 GL 正常路径
+        try {
+          if (!tmMap) {
+            let centerLL;
+            try { centerLL = new TMap.LatLng(centerLat, centerLng); } catch (e) { centerLL = null; }
+            if (!centerLL) throw new Error('TMap LatLng ctor unavailable');
+            tmMap = new TMap.Map(el, { center: centerLL, zoom: 11 });
+            tmMap.on('click', (e) => {
+              const ll = e && e.latLng ? e.latLng : null;
+              if (!ll) return;
+              selectedLatLng = { lat: ll.getLat(), lng: ll.getLng() };
+              if (tmMarker) {
+                try { tmMarker.updateGeometries([{ id: 'selected', position: ll }]); } catch (err) {}
+              } else {
+                try {
+                  tmMarker = new TMap.MultiMarker({
+                    map: tmMap,
+                    styles: {
+                      selected: new TMap.MarkerStyle({ width: 24, height: 35, anchor: { x: 12, y: 35 }, src: 'https://mapapi.qq.com/webgl/static/img/markerDefault.png' })
+                    },
+                    geometries: [{ id: 'selected', styleId: 'selected', position: ll }]
+                  });
+                } catch (err) {}
+              }
+            });
+            if (hasCoord) {
+              selectedLatLng = { lat: centerLat, lng: centerLng };
+              const ll = new TMap.LatLng(centerLat, centerLng);
+              try {
+                tmMarker = new TMap.MultiMarker({
+                  map: tmMap,
+                  styles: {
+                    selected: new TMap.MarkerStyle({ width: 24, height: 35, anchor: { x: 12, y: 35 }, src: 'https://mapapi.qq.com/webgl/static/img/markerDefault.png' })
+                  },
+                  geometries: [{ id: 'selected', styleId: 'selected', position: ll }]
+                });
+              } catch (err) {}
+            }
+          } else {
+            try { tmMap.setCenter(new TMap.LatLng(centerLat, centerLng)); tmMap.setZoom(tmMap.getZoom ? (tmMap.getZoom() || 11) : 11); } catch (err) {}
+          }
+        } catch (err) { console.error(err); toast('初始化腾讯地图失败'); }
       });
     };
     const closePlacePicker = () => {
       showPlacePicker.value = false;
       try { document.body.style.overflow = ''; } catch (e) {}
-      // 关闭时清理地图实例，避免下次打开容器失效
+      // 清理腾讯地图标记与搜索覆盖物
       try {
-        if (leafletMap) { leafletMap.remove(); }
+        if (tmMarker) { tmMarker.setMap(null); tmMarker = null; }
+        (searchOverlays || []).forEach((o) => { try { if (o && o.setMap) o.setMap(null); } catch(_) {} });
       } catch (e) {}
-      leafletMap = null;
-      leafletMarker = null;
-      if (searchMarkers) {
-        try { searchMarkers.clearLayers(); } catch (e) {}
-      }
-      searchMarkers = null;
+      // 若需要完全销毁实例，可在此置空（重新打开时会重新初始化）
+      // tmMap = null;
+      searchOverlays = [];
+      tmSearchService = null;
     };
     const searchPlace = async () => {
       const q = placeSearchKeyword.value.trim();
       if (!q) return toast('请输入地址关键词');
+      let container = document.getElementById('mapContainer');
+      if (!container) {
+        showPlacePicker.value = true;
+        await Vue.nextTick();
+        container = document.getElementById('mapContainer');
+      }
       placeSearching.value = true;
+      if (window.TMap && tmMap) {
+        try {
+          placeSearchResults.value = [];
+          try { searchOverlays.forEach(o => { if (o && o.setMap) o.setMap(null); }); } catch (e) {}
+          searchOverlays = [];
+          searchIdMap = new Map();
+          // 懒加载腾讯地图实例（若尚未初始化但脚本已就绪）
+          if (!tmMap && window.TMap && container) {
+            try {
+              const hasCoord = activityForm.lat != null && activityForm.lng != null;
+              const centerLat = hasCoord ? Number(activityForm.lat) : 31.2304;
+              const centerLng = hasCoord ? Number(activityForm.lng) : 121.4737;
+              const centerLL = new TMap.LatLng(centerLat, centerLng);
+              tmMap = new TMap.Map(container, { center: centerLL, zoom: 11 });
+            } catch (_) {}
+          }
+
+          const limit = Number(pageSize.value) || 8;
+          const pageIndex = Math.max(0, Number(placePage.value) || 0);
+          // 优先取地图中心；否则取表单坐标；再否则取默认坐标
+          let lat = 31.2304, lng = 121.4737;
+          try {
+            if (tmMap && tmMap.getCenter) {
+              const c = tmMap.getCenter(); lat = c.getLat(); lng = c.getLng();
+            } else if (activityForm.lat != null && activityForm.lng != null) {
+              lat = Number(activityForm.lat); lng = Number(activityForm.lng);
+            }
+          } catch (_) {}
+          const boundary = `nearby(${lat},${lng},5000)`;
+
+          // 使用腾讯地图 GL 内置检索服务，避免浏览器 CORS 限制
+          if (!tmSearchService) {
+            try { tmSearchService = new TMap.service.Search({}); } catch (_) { tmSearchService = null; }
+          }
+          let pois = [];
+          if (tmSearchService && tmSearchService.search) {
+            const result = await tmSearchService.search({ keyword: q, boundary, pageIndex: pageIndex + 1, pageSize: limit });
+            pois = (result && Array.isArray(result.data)) ? result.data : [];
+          } else {
+            // 后端代理降级：绕过浏览器 CORS（捕获配额耗尽 121 错误）
+            const url = `/qqmap/place?keyword=${encodeURIComponent(q)}&lat=${encodeURIComponent(lat)}&lng=${encodeURIComponent(lng)}&radius=5000&page=${encodeURIComponent(pageIndex)}&pageSize=${encodeURIComponent(limit)}`;
+            const res = await http.request(url);
+            const resp = await res.json();
+            if (!res.ok) {
+              const statusCode = Number(resp?.detail?.status || 0);
+              if (resp?.error === 'qqmap_quota_exceeded' || statusCode === 121) {
+                toast('腾讯地图Key当天调用量已用尽，请稍后或联系管理员');
+                placeSearching.value = false;
+                return;
+              }
+              throw new Error('QQMap place failed');
+            }
+            const data = (resp && Array.isArray(resp.data)) ? resp.data : [];
+            pois = data.map((d) => ({ id: d.id, title: d.title, address: d.address, location: d.location }));
+          }
+          const list = [];
+          const geoms = [];
+          pois.forEach((poi, i) => {
+            try {
+              const lat2 = poi && poi.location && poi.location.lat;
+              const lng2 = poi && poi.location && poi.location.lng;
+              if (lat2 == null || lng2 == null) return;
+              const item = {
+                id: String(poi.id || poi.uid || poi.title || ((poi.address || '') + i)),
+                name: poi.title || poi.address || '',
+                lat: Number(lat2),
+                lng: Number(lng2),
+                district: poi.address || (poi.ad_info ? (poi.ad_info.province + (poi.ad_info.city || '') + (poi.ad_info.district || '')) : ''),
+                category: poi.category || '',
+                idx: i,
+              };
+              list.push(item);
+              searchIdMap.set(item.id, item);
+              if (window.TMap) {
+                try { geoms.push({ id: item.id, styleId: 'poi', position: new TMap.LatLng(item.lat, item.lng) }); } catch (_) {}
+              }
+            } catch (err) {}
+          });
+          placeSearchResults.value = list;
+          if (geoms.length && window.TMap && tmMap) {
+            try {
+              const mm = new TMap.MultiMarker({
+                map: tmMap,
+                styles: { poi: new TMap.MarkerStyle({ width: 20, height: 28, anchor: { x: 10, y: 28 }, src: 'https://mapapi.qq.com/webgl/static/img/markerDefault.png' }) },
+                geometries: geoms
+              });
+              mm.on && mm.on('click', (evt) => {
+                try {
+                  const id = evt && evt.geometry && evt.geometry.id;
+                  const item = id ? searchIdMap.get(String(id)) : null;
+                  if (item) chooseSearchResult(item);
+                } catch (e) {}
+              });
+              searchOverlays.push(mm);
+              try { tmMap.setCenter(geoms[0].position); tmMap.setZoom(13); } catch (e) {}
+            } catch (e) {}
+          }
+          hasNextPlace.value = (Array.isArray(pois) && pois.length >= limit);
+          placePage.value = pageIndex;
+        } catch (e) {
+          console.error('地址搜索失败', e);
+          toast('地址搜索失败');
+        }
+        placeSearching.value = false;
+        return;
+      }
+      // 即使腾讯地图未就绪，仍尝试后端代理检索以给出候选列表
       try {
         placeSearchResults.value = [];
-        const res = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q)}&format=jsonv2&addressdetails=1&limit=8`, { headers: { 'Accept': 'application/json' } });
-        const list = await res.json();
-        if (!Array.isArray(list) || list.length === 0) { toast('未找到匹配地址'); return; }
-        placeSearchResults.value = list.map((it, idx) => {
-          const a = it.address || {};
-          const district = a.city || a.town || a.village || a.county || a.state || a.suburb || a.region || '';
-          const category = [it.class, it.type].filter(Boolean).join('/');
-          return { id: it.place_id || it.osm_id || it.display_name, name: it.display_name, lat: Number(it.lat), lng: Number(it.lon), district, category, idx };
-        });
-        if (leafletMap) {
-          if (!searchMarkers) searchMarkers = L.layerGroup().addTo(leafletMap);
-          searchMarkers.clearLayers();
-          const latLngs = [];
-          placeSearchResults.value.forEach((r, idx) => {
-            const color = pinColors[idx % pinColors.length];
-            const m = L.marker([r.lat, r.lng], {
-              icon: L.divIcon({ className: 'map-pin-wrap', html: `<div class="map-pin" style="background:${color}">${idx + 1}</div>`, iconSize: [28, 28], iconAnchor: [14, 14] })
-            }).addTo(searchMarkers);
-            m.on('click', () => {
-              chooseSearchResult(r);
-            });
-            latLngs.push([r.lat, r.lng]);
-          });
-          if (latLngs.length > 0) {
-            try { leafletMap.fitBounds(latLngs, { padding: [20, 20] }); } catch (e) {}
+        const limit = Number(pageSize.value) || 8;
+        const pageIndex = Math.max(0, Number(placePage.value) || 0);
+        const hasCoord = activityForm.lat != null && activityForm.lng != null;
+        const lat = hasCoord ? Number(activityForm.lat) : 31.2304;
+        const lng = hasCoord ? Number(activityForm.lng) : 121.4737;
+        const url = `/qqmap/place?keyword=${encodeURIComponent(q)}&lat=${encodeURIComponent(lat)}&lng=${encodeURIComponent(lng)}&radius=5000&page=${encodeURIComponent(pageIndex)}&pageSize=${encodeURIComponent(limit)}`;
+        const res = await http.request(url);
+        const resp = await res.json();
+        if (!res.ok) {
+          const statusCode = Number(resp?.detail?.status || 0);
+          if (resp?.error === 'qqmap_quota_exceeded' || statusCode === 121) {
+            toast('腾讯地图Key当天调用量已用尽，请稍后或联系管理员');
+            placeSearching.value = false;
+            return;
           }
+          throw new Error('QQMap place failed');
         }
-      } catch (e) {
-        console.error('地址搜索失败', e);
+        const data = (resp && Array.isArray(resp.data)) ? resp.data : [];
+        const list = data.map((d, i) => ({ id: String(d.id || i + 1), name: d.title || d.address || '', lat: Number(d.location?.lat ?? 0), lng: Number(d.location?.lng ?? 0), district: d.address || '', category: d.category || '', idx: i }));
+        placeSearchResults.value = list;
+        hasNextPlace.value = (Array.isArray(data) && data.length >= limit);
+        placePage.value = pageIndex;
+      } catch (e2) {
+        console.error('地址搜索失败（后端代理）', e2);
         toast('地址搜索失败');
-      } finally {
-        placeSearching.value = false;
       }
+      placeSearching.value = false;
     };
     const chooseSearchResult = (item) => {
       try {
-        // 记录当前选中的候选索引用于列表高亮
         try { selectedResultIndex.value = placeSearchResults.value.findIndex((x) => x && x.id === item.id); } catch (e) {}
         selectedLatLng = { lat: item.lat, lng: item.lng };
-        if (leafletMap) {
-          leafletMap.setView([item.lat, item.lng], 14);
-          if (leafletMarker) {
-            leafletMarker.setLatLng(selectedLatLng);
-            if (leafletMarker.dragging) leafletMarker.dragging.enable();
+        if (window.TMap && tmMap) {
+          const ll = new TMap.LatLng(item.lat, item.lng);
+          try { tmMap.setCenter(ll); tmMap.setZoom(14); } catch (e) {}
+          if (tmMarker) {
+            try { tmMarker.updateGeometries([{ id: 'selected', position: ll }]); } catch (e) {}
           } else {
-            leafletMarker = L.marker(selectedLatLng, { draggable: true }).addTo(leafletMap);
-            leafletMarker.on('dragend', (ev) => { selectedLatLng = ev.target.getLatLng(); });
+            try {
+              tmMarker = new TMap.MultiMarker({
+                map: tmMap,
+                styles: { selected: new TMap.MarkerStyle({ width: 24, height: 35, anchor: { x: 12, y: 35 }, src: 'https://mapapi.qq.com/webgl/static/img/markerDefault.png' }) },
+                geometries: [{ id: 'selected', styleId: 'selected', position: ll }]
+              });
+            } catch (err) {}
           }
         }
         if (item.name) activityForm.place = item.name;
       } catch (e) { console.error(e); }
     };
 
-    // 分页获取地址候选（使用 limit/offset）
+    // 分页获取地址候选：使用腾讯地图 WebService 检索的分页能力
     const fetchPlacePage = async () => {
       const q = placeSearchKeyword.value.trim();
       if (!q) return toast('请输入地址关键词');
-      placeSearching.value = true;
-      try {
-        placeSearchResults.value = [];
-        const offset = placePage.value * pageSize.value;
-        const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q)}&format=jsonv2&addressdetails=1&limit=${pageSize.value}&offset=${offset}`;
-        const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
-        const list = await res.json();
-        hasNextPlace.value = Array.isArray(list) && list.length === pageSize.value;
-        if (!Array.isArray(list) || list.length === 0) { toast('未找到匹配地址'); return; }
-        placeSearchResults.value = list.map((it, idx) => {
-          const a = it.address || {};
-          const district = a.city || a.town || a.village || a.county || a.state || a.suburb || a.region || '';
-          const category = [it.class, it.type].filter(Boolean).join('/');
-          return { id: it.place_id || it.osm_id || it.display_name, name: it.display_name, lat: Number(it.lat), lng: Number(it.lon), district, category, idx };
-        });
-        if (leafletMap) {
-          if (!searchMarkers) searchMarkers = L.layerGroup().addTo(leafletMap);
-          searchMarkers.clearLayers();
-          const latLngs = [];
-          placeSearchResults.value.forEach((r, idx) => {
-            const color = pinColors[idx % pinColors.length];
-            const m = L.marker([r.lat, r.lng], {
-              icon: L.divIcon({ className: 'map-pin-wrap', html: `<div class="map-pin" style="background:${color}">${idx + 1}</div>`, iconSize: [28, 28], iconAnchor: [14, 14] })
-            }).addTo(searchMarkers);
-            try { m.bindTooltip(`${r.district}（${r.category}）`, { direction: 'top', offset: [0, -18], opacity: 0.9, sticky: true }); } catch (e) {}
-            m.on('click', () => { chooseSearchResult(r); });
-            latLngs.push([r.lat, r.lng]);
-          });
-          if (latLngs.length > 0) {
-            try { leafletMap.fitBounds(latLngs, { padding: [20, 20] }); } catch (e) {}
-          }
-        }
-      } catch (e) {
-        console.error('地址搜索失败', e);
-        toast('地址搜索失败');
-      } finally {
-        placeSearching.value = false;
-      }
+      // 直接复用 searchPlace，按当前 placePage 与 pageSize 重新检索
+      await searchPlace();
     };
     const nextPlacePage = async () => {
       if (placeSearching.value) return;
@@ -598,14 +678,13 @@ createApp({
       try {
         placeSearchResults.value = [];
         selectedResultIndex.value = -1;
-        if (searchMarkers) searchMarkers.clearLayers();
+        try { searchOverlays.forEach(o => { if (tmMap && o && o.setMap) o.setMap(null); if (lfMap && o && o.remove) o.remove(); }); } catch (e) {}
+        searchOverlays = [];
         if (clearAlsoSelected.value) {
           selectedLatLng = null;
           try {
-            if (leafletMarker) {
-              leafletMarker.remove();
-              leafletMarker = null;
-            }
+            if (tmMarker && tmMap) { tmMarker.setMap(null); tmMarker = null; }
+            if (lfMarker && lfMap) { lfMarker.remove(); lfMarker = null; }
           } catch (e) {}
           activityForm.lat = null;
           activityForm.lng = null;
@@ -623,8 +702,10 @@ createApp({
         selectedResultIndex.value = Math.max(0, Math.min(len - 1, selectedResultIndex.value + step));
       }
       const item = placeSearchResults.value[selectedResultIndex.value];
-      if (item && leafletMap) {
-        try { leafletMap.panTo([item.lat, item.lng]); } catch (e) {}
+      if (item) {
+        if (window.TMap && tmMap) {
+          try { tmMap.panTo(new TMap.LatLng(item.lat, item.lng)); } catch (e) {}
+        }
       }
     };
 
@@ -666,14 +747,26 @@ createApp({
     };
 
     const reverseGeocode = async (lat, lng) => {
+      // 优先使用后端代理（避免浏览器 CORS 限制），并显式处理配额耗尽
       try {
-        const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}`, { headers: { 'Accept': 'application/json' } });
-        const json = await res.json();
-        return (json && json.display_name) ? json.display_name : '';
-      } catch (e) {
-        console.error('反向地理编码失败', e);
-        return '';
-      }
+        const url = `/qqmap/geocoder?lat=${encodeURIComponent(Number(lat))}&lng=${encodeURIComponent(Number(lng))}`;
+        const res = await http.request(url);
+        const resp = await res.json();
+        if (!res.ok) {
+          const statusCode = Number(resp?.detail?.status || 0);
+          if (resp?.error === 'qqmap_quota_exceeded' || statusCode === 121) {
+            toast('腾讯地图Key当天调用量已用尽，请稍后或联系管理员');
+            return '';
+          }
+          throw new Error('QQMap geocoder failed');
+        }
+        if (resp && Number(resp.status) === 0) {
+          const addr = resp.address || (resp.result && (resp.result.address || (resp.result.formatted_addresses && resp.result.formatted_addresses.recommend))) || '';
+          return addr || '';
+        }
+      } catch (e) { console.error('腾讯反向地理编码失败', e); }
+      // 若失败则返回空字符串
+      return '';
     };
 
     // 支持按 ESC 关闭地图弹窗，减少遮挡卡住的体验

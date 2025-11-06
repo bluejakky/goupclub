@@ -1,6 +1,7 @@
 // Unified HTTP wrapper with auth header and 401/403 handling
 (function(){
-  const DEFAULT_BASE = 'https://www.goupclub.com/api';
+  const isLocal = (typeof location !== 'undefined') && (location.hostname === 'localhost' || location.hostname === '127.0.0.1');
+  const DEFAULT_BASE = isLocal ? 'http://127.0.0.1:3000/api' : 'https://www.goupclub.com/api';
   const API_BASE = (typeof window !== 'undefined' && window.HTTP_API_BASE)
     ? String(window.HTTP_API_BASE)
     : DEFAULT_BASE;

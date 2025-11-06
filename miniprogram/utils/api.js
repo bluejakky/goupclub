@@ -112,6 +112,10 @@ module.exports = {
   async searchActivities({ keyword = '' } = {}) {
     return request({ url: '/activities', method: 'GET', data: { keyword } })
   },
+  // 获取已发布活动（支持仅返回未结束）
+  async getPublishedActivities({ keyword = '', upcomingOnly = true } = {}) {
+    return request({ url: '/activities', method: 'GET', data: { keyword, status: '已发布', upcomingOnly: upcomingOnly ? 1 : 0 } })
+  },
   // 查询成员积分账户与近期流水
   async getMemberPoints(id) {
     return request({ url: `/members/${id}/points`, method: 'GET' })

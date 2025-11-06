@@ -15,6 +15,35 @@ import { ensureCooperateRequestsSchema, registerCooperateRoutes } from './servic
 import { registerPaymentRoutes } from './services/paymentsRoutes.js';
 import { wechatJsapiPrepay, alipayWapPay, verifyWechatNotifySignature, decryptWechatResource, verifyAlipayNotify, getConfigFromEnv } from './services/payments.js';
 
+// Simple in-memory cache with TTL to reduce QQMap WebService calls
+const apiCache = new Map();
+const MAX_CACHE_ENTRIES = Number(process.env.QQMAP_CACHE_MAX || 1000);
+const TTL_PLACE_MS = Number(process.env.QQMAP_PLACE_CACHE_TTL_MS || 6 * 60 * 60 * 1000); // 6 hours
+const TTL_GEOCODER_MS = Number(process.env.QQMAP_GEOCODER_CACHE_TTL_MS || 24 * 60 * 60 * 1000); // 24 hours
+const cacheGet = (key) => {
+  try {
+    const item = apiCache.get(key);
+    if (!item) return null;
+    if (Number(item.expiresAt || 0) < Date.now()) { apiCache.delete(key); return null; }
+    return item.value;
+  } catch(_) { return null; }
+};
+const cacheSet = (key, value, ttlMs) => {
+  try {
+    apiCache.set(key, { value, expiresAt: Date.now() + Math.max(1000, Number(ttlMs || 300000)) });
+    if (apiCache.size > MAX_CACHE_ENTRIES) {
+      // naive sweep: remove expired first, then trim oldest inserted keys
+      const now = Date.now();
+      for (const [k, v] of apiCache) { if (Number(v.expiresAt || 0) < now) apiCache.delete(k); }
+      while (apiCache.size > MAX_CACHE_ENTRIES) {
+        const firstKey = apiCache.keys().next().value;
+        if (!firstKey) break;
+        apiCache.delete(firstKey);
+      }
+    }
+  } catch(_) {}
+};
+
 const app = express();
 // Trust first proxy (Nginx) to honor X-Forwarded-For
 app.set('trust proxy', 1);
@@ -458,6 +487,144 @@ app.get('/api/wechat/openid', async (req, res) => {
   }
 });
 
+// Tencent Map WebService proxy: place search (avoid browser CORS)
+app.get('/api/qqmap/place', async (req, res) => {
+  try {
+    const keyword = String(req.query.keyword || '').trim();
+    const lat = Number(req.query.lat);
+    const lng = Number(req.query.lng);
+    const radius = Math.max(100, Math.min(Number(req.query.radius || 5000), 50000));
+    const page = Math.max(Number(req.query.page || 0), 0);
+    const pageSize = Math.min(Math.max(Number(req.query.pageSize || 10), 1), 20);
+    const key = String(process.env.QQMAP_KEY || req.query.key || '');
+    if (!key) return res.status(400).json({ error: 'qqmap_key_required' });
+    if (!keyword) return res.status(400).json({ error: 'keyword_required' });
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) return res.status(400).json({ error: 'lat_lng_required' });
+    const boundary = `nearby(${lat},${lng},${radius})`;
+    const baseUrl = 'https://apis.map.qq.com/ws/place/v1/search';
+    const url = new URL(baseUrl);
+    url.searchParams.set('keyword', keyword);
+    url.searchParams.set('boundary', boundary);
+    url.searchParams.set('page_index', String(page));
+    url.searchParams.set('page_size', String(pageSize));
+    url.searchParams.set('key', key);
+
+    // Cache lookup
+    const cacheKey = `place:${keyword}|${lat}|${lng}|${radius}|${page}|${pageSize}`;
+    const cached = cacheGet(cacheKey);
+    if (cached) {
+      return res.json(cached);
+    }
+
+    // Optional SIG signing if server secret is configured
+    const SK = process.env.QQMAP_SK;
+    if (SK) {
+      const params = {
+        boundary,
+        key,
+        keyword,
+        page_index: String(page),
+        page_size: String(pageSize),
+      };
+      const sorted = Object.keys(params)
+        .sort()
+        .map(k => `${k}=${encodeURIComponent(params[k])}`)
+        .join('&');
+      const raw = `/ws/place/v1/search?${sorted}${SK}`;
+      const sig = crypto.createHash('md5').update(raw).digest('hex');
+      url.searchParams.set('sig', sig);
+    }
+
+    const headers = {
+      Referer: process.env.DEV_REFERER || 'http://localhost:5523/',
+      Origin: process.env.DEV_REFERER || 'http://localhost:5523',
+      Accept: 'application/json',
+    };
+
+    const resp = await fetch(url.toString(), { headers });
+    const json = await resp.json();
+    if (!resp.ok || Number(json.status) !== 0) {
+      // quota exhausted
+      if (Number(json.status) === 121) {
+        return res.status(429).json({ error: 'qqmap_quota_exceeded', detail: json });
+      }
+      return res.status(resp.status || 500).json({ error: 'qqmap_error', detail: json });
+    }
+    const items = Array.isArray(json.data) ? json.data.map((d, idx) => ({
+      id: String(d.id || idx + 1),
+      title: d.title || d.name || '',
+      address: d.address || d.addr || '',
+      category: d.category || '',
+      location: d.location ? { lat: Number(d.location.lat), lng: Number(d.location.lng) } : { lat: Number(d.lat || 0), lng: Number(d.lng || 0) },
+      _raw: d
+    })) : [];
+    const payload = { status: 0, data: items, page, pageSize };
+    cacheSet(cacheKey, payload, TTL_PLACE_MS);
+    return res.json(payload);
+  } catch (e) {
+    return res.status(500).json({ error: e.message });
+  }
+});
+
+// Tencent Map WebService proxy: reverse geocoding
+app.get('/api/qqmap/geocoder', async (req, res) => {
+  try {
+    const lat = Number(req.query.lat);
+    const lng = Number(req.query.lng);
+    const key = String(process.env.QQMAP_KEY || req.query.key || '');
+    if (!key) return res.status(400).json({ error: 'qqmap_key_required' });
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) return res.status(400).json({ error: 'lat_lng_required' });
+    const baseUrl = 'https://apis.map.qq.com/ws/geocoder/v1/';
+    const url = new URL(baseUrl);
+    url.searchParams.set('location', `${lat},${lng}`);
+    url.searchParams.set('key', key);
+
+    // Cache lookup
+    const cacheKey = `geocoder:${lat}|${lng}`;
+    const cached = cacheGet(cacheKey);
+    if (cached) {
+      return res.json(cached);
+    }
+
+    // Optional SIG signing if server secret is configured
+    const SK = process.env.QQMAP_SK;
+    if (SK) {
+      const params = {
+        key,
+        location: `${lat},${lng}`,
+      };
+      const sorted = Object.keys(params)
+        .sort()
+        .map(k => `${k}=${encodeURIComponent(params[k])}`)
+        .join('&');
+      const raw = `/ws/geocoder/v1/?${sorted}${SK}`;
+      const sig = crypto.createHash('md5').update(raw).digest('hex');
+      url.searchParams.set('sig', sig);
+    }
+
+    const headers = {
+      Referer: process.env.DEV_REFERER || 'http://localhost:5523/',
+      Origin: process.env.DEV_REFERER || 'http://localhost:5523',
+      Accept: 'application/json',
+    };
+
+    const resp = await fetch(url.toString(), { headers });
+    const json = await resp.json();
+    if (!resp.ok || Number(json.status) !== 0) {
+      if (Number(json.status) === 121) {
+        return res.status(429).json({ error: 'qqmap_quota_exceeded', detail: json });
+      }
+      return res.status(resp.status || 500).json({ error: 'qqmap_error', detail: json });
+    }
+    const addr = (json.result && (json.result.address || (json.result.formatted_addresses && json.result.formatted_addresses.recommend))) || '';
+    const payload = { status: 0, address: addr || '', result: json.result };
+    cacheSet(cacheKey, payload, TTL_GEOCODER_MS);
+    return res.json(payload);
+  } catch (e) {
+    return res.status(500).json({ error: e.message });
+  }
+});
+
 app.post('/api/user/change-password', authMiddleware, async (req, res) => {
   const { username } = req.admin || {};
   const { oldPassword, newPassword } = req.body || {};
@@ -520,7 +687,7 @@ app.delete('/api/categories/:id', async (req, res) => {
 // Activities
 app.get('/api/activities', async (req, res) => {
   try {
-    const { keyword } = req.query || {};
+    const { keyword, status: statusParam, upcomingOnly } = req.query || {};
     const where = [];
     const params = [];
     if (keyword && String(keyword).trim()) {
@@ -528,6 +695,16 @@ app.get('/api/activities', async (req, res) => {
       // 标题、地点、内容模糊匹配
       where.push('(title LIKE ? OR place LIKE ? OR content LIKE ?)');
       params.push(kw, kw, kw);
+    }
+    if (statusParam && String(statusParam).trim()) {
+      // 支持英文 published 与中文 已发布 两种取值
+      const norm = /^(published|已发布)$/i.test(String(statusParam).trim()) ? '已发布' : String(statusParam).trim();
+      where.push('status = ?');
+      params.push(norm);
+    }
+    // upcomingOnly=1 时，仅返回尚未结束的活动（开始或结束时间晚于当前）
+    if (String(upcomingOnly || '').trim() === '1' || String(upcomingOnly || '').toLowerCase() === 'true') {
+      where.push('(COALESCE(end, start) >= NOW())');
     }
     const sql =
       'SELECT id, title, start, end, place, lat, lng, categoryIds, groupTags AS `groups`, min, max, waitlist, enrolled, price, status, isTop, isHot, publishedAt, mainImage, images, content FROM activities' +
