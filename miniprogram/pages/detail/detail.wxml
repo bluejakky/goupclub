@@ -15,7 +15,7 @@
     </view>
     <view class="meta">
       <image class="meta-icon" src="/assets/time.png" mode="aspectFit"/>
-      <text>时间：{{detail.start}} - {{detail.end}}</text>
+      <text>时间：{{detail.startDisplay}} - {{detail.endDisplay}}</text>
     </view>
     <view class="meta">
       <image class="meta-icon" src="/assets/address.png" mode="aspectFit"/>
@@ -36,12 +36,12 @@
   </view>
 
   <view class="bottom-bar">
-      <button class="share-icon-only" open-type="share" hover-class="none">
-        <view class="share-content">
-          <image class="share-icon" src="/assets/share.png" mode="aspectFit"/>
-          <text class="share-text">分享</text>
-        </view>
-      </button>
-      <button class="apply {{applyDisabled?'disabled':''}}" bindtap="onApply" disabled="{{applyDisabled}}" hover-class="none">{{ctaText}}</button>
+    <button class="share-icon-only" open-type="share" hover-class="none">
+      <view class="share-content">
+        <image class="share-icon" src="/assets/share.png" mode="aspectFit"/>
+        <text class="share-text">分享</text>
+      </view>
+    </button>
+    <button class="apply {{applyDisabled?'disabled':''}}" bindtap="onApply" disabled="{{applyDisabled}}" hover-class="none">{{ctaText}}</button>
   </view>
 </view>

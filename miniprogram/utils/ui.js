@@ -44,4 +44,34 @@ function getIcon(key) {
   return img || defaultIcons[key] || ''
 }
 
-module.exports = { getIcon, defaultIcons, localIcons }
+// 新增：中文友好时间格式化（含周几与跨年显示）
+function formatDateTime(s) {
+  if (!s) return ''
+  const mapWeek = ['周日','周一','周二','周三','周四','周五','周六']
+  let d = null
+  try {
+    const iso = String(s).replace(' ', 'T')
+    const t = new Date(iso)
+    if (!Number.isNaN(t.getTime())) d = t
+  } catch {}
+  if (!d) {
+    try {
+      const [datePart, timePart] = String(s).split(' ')
+      const [y, m, day] = (datePart || '').split('-').map(Number)
+      const [hh, mm] = (timePart || '00:00').split(':').map(Number)
+      d = new Date(y, (m || 1) - 1, day || 1, hh || 0, mm || 0, 0)
+    } catch {}
+  }
+  if (!d || Number.isNaN(d.getTime())) return String(s)
+  const nowY = new Date().getFullYear()
+  const Y = d.getFullYear()
+  const M = String(d.getMonth() + 1)
+  const D = String(d.getDate())
+  const H = String(d.getHours()).padStart(2, '0')
+  const Min = String(d.getMinutes()).padStart(2, '0')
+  const wd = mapWeek[d.getDay()]
+  const prefix = Y !== nowY ? `${Y}年${M}月${D}日` : `${M}月${D}日`
+  return `${prefix} ${wd} ${H}:${Min}`
+}
+
+module.exports = { getIcon, defaultIcons, localIcons, formatDateTime }

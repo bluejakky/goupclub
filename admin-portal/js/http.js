@@ -7,7 +7,12 @@
     : DEFAULT_BASE;
 
   async function request(path, options = {}){
-    const headers = { 'Content-Type': 'application/json', ...(options.headers || {}) };
+    const headers = { ...(options.headers || {}) };
+    // 若为 FormData，勿手动设定 Content-Type（浏览器会自动设置带 boundary 的 multipart/form-data）
+    const isFormData = options && options.body && typeof FormData !== 'undefined' && (options.body instanceof FormData);
+    if (!isFormData && options.body && !('Content-Type' in headers)) {
+      headers['Content-Type'] = 'application/json';
+    }
     try {
       const token = localStorage.getItem('adminToken');
       if (token && !headers.Authorization) headers.Authorization = `Bearer ${token}`;

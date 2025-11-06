@@ -374,13 +374,17 @@ createApp({
         toast('选择主图失败');
       }
     };
-    const applyMainImageCrop = () => {
+    const applyMainImageCrop = async () => {
       try {
         if (!cropper) return toast('请先选择图片');
         const canvas = cropper.getCroppedCanvas({ width: 1280, height: 720 });
         if (!canvas) return toast('裁剪失败');
-        activityForm.mainImage = canvas.toDataURL('image/jpeg', 0.9);
-        toast('主图已裁剪并保存');
+        const blob = await new Promise((resolve, reject) => {
+          try { canvas.toBlob((b) => b ? resolve(b) : reject(new Error('toBlob failed')), 'image/jpeg', 0.9); } catch (e) { reject(e); }
+        });
+        const url = await uploadImage(blob);
+        activityForm.mainImage = url;
+        toast(api.useApi.value ? '主图已裁剪并上传' : '主图已裁剪（本地预览）');
       } catch (err) {
         console.error('裁剪主图失败', err);
         toast('裁剪主图失败');
@@ -392,16 +396,11 @@ createApp({
         const files = Array.from(e.target.files || []);
         if (!files.length) return;
         for (const file of files) {
-          await new Promise((resolve) => {
-            const reader = new FileReader();
-            reader.onload = () => {
-              activityForm.images.push(reader.result);
-              resolve();
-            };
-            reader.readAsDataURL(file);
-          });
+          const url = await uploadImage(file);
+          activityForm.images.push(url);
         }
-        toast('已添加附图：' + files.length + ' 张');
+        activityForm.imagesText = activityForm.images.join(',');
+        toast(api.useApi.value ? ('已上传附图：' + files.length + ' 张') : ('已添加附图：' + files.length + ' 张'));
       } catch (err) {
         console.error('附图上传失败', err);
         toast('附图上传失败');
@@ -789,14 +788,23 @@ createApp({
     };
 
     const uploadImage = async (file) => {
-      // 示例实现：若后端未接入，返回对象URL用于演示；接入后改为POST后端返回永久URL
       try {
-        // TODO: 接入后端：
-        // const form = new FormData();
-        // form.append('file', file);
-        // const res = await fetch('/api/upload/image', { method: 'POST', body: form });
-        // const json = await res.json();
-        // return json.url;
+        if (api.useApi.value) {
+          const form = new FormData();
+          const fname = (file && file.name) ? file.name : 'image.jpg';
+          form.append('file', file, fname);
+          const res = await fetchWithBase('/api/upload/image', { method: 'POST', body: form });
+          if (!res.ok) {
+            let detail = '';
+            try { detail = await res.text(); } catch(_) {}
+            throw new Error('上传失败：' + res.status + (detail ? (' ' + detail) : ''));
+          }
+          const json = await res.json();
+          const url = json && json.url ? json.url : '';
+          if (!url) throw new Error('上传响应异常');
+          return url;
+        }
+        // 未启用后端：返回对象URL用于本地预览
         return URL.createObjectURL(file);
       } catch (e) {
         console.error('图片上传失败', e);
@@ -1209,8 +1217,9 @@ createApp({
     const API_BASE = (location.hostname === 'localhost' || location.hostname === '127.0.0.1') ? 'http://127.0.0.1:3000' : 'https://www.goupclub.com';
     const fetchWithBase = async (path, options = {}) => {
       const headers = { ...(options.headers || {}) };
-      // 自动附带 JSON 头（在有 body 时）
-      if (options.body && !('Content-Type' in headers)) headers['Content-Type'] = 'application/json';
+      // 自动附带 JSON 头（在有 body 时，且不是 FormData）
+      const isFormData = options && options.body && typeof FormData !== 'undefined' && (options.body instanceof FormData);
+      if (!isFormData && options.body && !('Content-Type' in headers)) headers['Content-Type'] = 'application/json';
       // 自动附带令牌
       try {
         const token = localStorage.getItem('adminToken');

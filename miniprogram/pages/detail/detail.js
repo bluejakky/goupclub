@@ -1,5 +1,6 @@
 const api = require('../../utils/api.js')
 const { BASE_URL } = require('../../utils/request.js')
+const { formatDateTime } = require('../../utils/ui.js')
 const ASSET_HOST = String(BASE_URL || '').replace(/\/api$/, '')
 const normalizeAssetUrl = (u) => {
   if (!u) return '';
@@ -39,11 +40,11 @@ Page({
     try {
       cached = wx.getStorageSync('lastActivityDetail') || null;
       if (cached && (cached.title || cached.mainImage)) {
-        let imgs = [];
+        let imgs = []
         try {
-          imgs = Array.isArray(cached.images) && cached.images.length ? cached.images : (cached.mainImage ? [cached.mainImage] : detail.images);
+          imgs = Array.isArray(cached.images) && cached.images.length ? cached.images : (cached.mainImage ? [cached.mainImage] : detail.images)
         } catch (_) {}
-        imgs = (Array.isArray(imgs) ? imgs : []).map(normalizeAssetUrl);
+        imgs = (Array.isArray(imgs) ? imgs : []).map(normalizeAssetUrl)
         detail = {
           images: imgs,
           title: cached.title || detail.title,
@@ -51,6 +52,8 @@ Page({
           top: !!cached.isTop,
           start: cached.start || detail.start,
           end: cached.end || detail.end,
+          startDisplay: formatDateTime(cached.start || detail.start),
+          endDisplay: formatDateTime(cached.end || detail.end),
           place: cached.place || detail.place,
           signed: Number(cached.enrolled ?? detail.signed),
           max: Number(cached.max ?? detail.max),
@@ -64,7 +67,9 @@ Page({
     // 去重国旗，避免重复显示
     const flags = Array.isArray(detail.flags) ? detail.flags.filter((f, i, arr) => arr.indexOf(f) === i) : [];
     const hasDetail = !!(cached && (cached.title || cached.mainImage || (Array.isArray(cached.images) && cached.images.length > 0)));
-    this.setData({ id, detail: { ...detail, flags }, hasRealData: hasDetail });
+    // 默认也补充展示用时间
+    detail = { ...detail, flags, startDisplay: formatDateTime(detail.start), endDisplay: formatDateTime(detail.end) }
+    this.setData({ id, detail, hasRealData: hasDetail });
     this.updateCTA();
     try {
       wx.showShareMenu({ withShareTicket: true, menus: ['shareAppMessage', 'shareTimeline'] });
@@ -86,6 +91,8 @@ Page({
           top: !!a.isTop,
           start: a.start || this.data.detail.start,
           end: a.end || this.data.detail.end,
+          startDisplay: formatDateTime(a.start || this.data.detail.start),
+          endDisplay: formatDateTime(a.end || this.data.detail.end),
           place: a.place || this.data.detail.place,
           signed: Number(a.enrolled ?? this.data.detail.signed),
           max: Number(a.max ?? this.data.detail.max),

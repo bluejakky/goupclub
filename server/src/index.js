@@ -930,6 +930,17 @@ app.post('/api/upload/avatar', upload.single('file'), async (req, res) => {
     res.status(500).json({ error: e.message });
   }
 });
+// 通用图片上传（活动主图/附图），仅管理员可用
+app.post('/api/upload/image', authMiddleware, upload.single('file'), async (req, res) => {
+  try {
+    const file = req.file;
+    if (!file) return res.status(400).json({ error: 'file required' });
+    const url = `/uploads/${file.filename}`;
+    res.json({ url, filename: file.filename });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
 
 // Activity signup (qualification and capacity)
 app.post('/api/activity/signup', async (req, res) => {
