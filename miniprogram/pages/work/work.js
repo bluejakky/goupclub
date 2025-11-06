@@ -1,4 +1,13 @@
 const api = require('../../utils/api.js')
+const { BASE_URL } = require('../../utils/request.js')
+const ASSET_HOST = String(BASE_URL || '').replace(/\/api$/, '')
+const normalizeAssetUrl = (u) => {
+  if (!u) return '';
+  const s = String(u).trim();
+  if (/^https?:\/\//i.test(s)) return s;
+  if (s.startsWith('/')) return `${ASSET_HOST}${s}`;
+  return `${ASSET_HOST}/${s}`;
+}
 
 Page({
   data: {
@@ -46,6 +55,7 @@ Page({
         try {
           images = Array.isArray(a.images) ? a.images : (a.images ? JSON.parse(a.images) : [])
         } catch (_) {}
+        images = images.map(normalizeAssetUrl)
         const groups = Array.isArray(a.groups) ? a.groups : []
         const catPick = groups.find(g => ['汉语','英语','小语种','志愿','主题'].includes(String(g))) || ''
         return {
@@ -62,7 +72,7 @@ Page({
           isHot: !!a.isHot,
           publishedAt: a.publishedAt || '',
           status: a.status || '',
-          mainImage: a.mainImage || '',
+          mainImage: normalizeAssetUrl(a.mainImage || images[0] || ''),
           images,
           content: a.content || '',
           flags: []
