@@ -64,6 +64,7 @@ Page({
           status: a.status || '',
           mainImage: a.mainImage || '',
           images,
+          content: a.content || '',
           flags: []
         }
       }
@@ -187,7 +188,12 @@ Page({
     this.setData({ activities: list });
   },
   openDetail(e) {
-    const id = e.currentTarget.dataset.id;
+    const id = Number(e.currentTarget.dataset.id);
+    // 在进入详情页前缓存当前卡片的完整数据，供详情页使用
+    const item = (this.data.fullActivities || []).find(x => Number(x.id) === id) || (this.data.activities || []).find(x => Number(x.id) === id);
+    if (item) {
+      try { wx.setStorageSync('lastActivityDetail', item); } catch (_) {}
+    }
     wx.navigateTo({ url: '/pages/detail/detail?id=' + id });
   },
 
